@@ -11,7 +11,7 @@ console = Console()
 
 
 @click.command()
-@click.argument("path", type=click.Path(exists=True))
+@click.argument("path", type=str) 
 @click.option("--target-dir", "-t", help="Target subdirectory to analyze")
 @click.option(
     "--max-size",

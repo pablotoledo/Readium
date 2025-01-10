@@ -1,13 +1,31 @@
 import os
+import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 
-from .config import (
-    DEFAULT_EXCLUDE_DIRS,
-    DEFAULT_EXCLUDE_FILES,
-    DEFAULT_INCLUDE_EXTENSIONS,
-)
+from .config import (DEFAULT_EXCLUDE_DIRS, DEFAULT_EXCLUDE_FILES,
+                     DEFAULT_INCLUDE_EXTENSIONS)
+
+
+def is_git_url(url: str) -> bool:
+    """Check if the given string is a git URL"""
+    return url.startswith(("http://", "https://")) and (
+        url.endswith(".git") or "github.com" in url or "gitlab.com" in url
+    )
+
+
+def clone_repository(url: str, target_dir: str) -> None:
+    """Clone a git repository to the target directory"""
+    try:
+        subprocess.run(
+            ["git", "clone", "--depth=1", url, target_dir],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise ValueError(f"Failed to clone repository: {e.stderr.decode()}")
 
 
 @dataclass
@@ -72,17 +90,34 @@ class Readium:
 
     def read_docs(self, path: Union[str, Path]) -> Tuple[str, str, str]:
         """
-        Read documentation from a directory
+        Read documentation from a directory or git repository
 
-        Returns:
-        --------
+        Parameters
+        ----------
+        path : Union[str, Path]
+            Local path or git URL
+
+        Returns
+        -------
         Tuple[str, str, str]:
             summary, tree structure, content
         """
-        path = Path(path)
-        if not path.exists():
-            raise ValueError(f"Path does not exist: {path}")
+        # If it's a git URL, clone first
+        if isinstance(path, str) and is_git_url(path):
+            with tempfile.TemporaryDirectory() as temp_dir:
+                try:
+                    clone_repository(path, temp_dir)
+                    return self._process_directory(Path(temp_dir))
+                except Exception as e:
+                    raise ValueError(f"Error processing git repository: {str(e)}")
+        else:
+            path = Path(path)
+            if not path.exists():
+                raise ValueError(f"Path does not exist: {path}")
+            return self._process_directory(path)
 
+    def _process_directory(self, path: Path) -> Tuple[str, str, str]:
+        """Internal method to process a directory"""
         files = []
 
         # If target_dir is specified, look only in that subdirectory
@@ -134,6 +169,8 @@ class Readium:
 
         # Generate summary
         summary = f"Path analyzed: {path}\n"
+        if isinstance(path, str) and is_git_url(path):
+            summary = f"Repository: {path}\n"
         summary += f"Files processed: {len(files)}\n"
         if self.config.target_dir:
             summary += f"Target directory: {self.config.target_dir}\n"
