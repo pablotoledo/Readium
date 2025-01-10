@@ -1,0 +1,21 @@
+[project]
+name = "readium"
+version = "0.1.0"
+description = "A tool to extract and analyze documentation from repositories and directories"
+authors = [
+    {name = "Pablo Toledo",email = "pablotoledo@users.noreply.github.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "click (>=8.1.8,<9.0.0)",
+    "rich (>=13.9.4,<14.0.0)"
+]
+
+[project.scripts]
+readium = "readium.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
