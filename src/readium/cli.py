@@ -17,8 +17,8 @@ console = Console()
     "--max-size",
     "-s",
     type=int,
-    default=1024 * 1024,
-    help="Maximum file size in bytes (default: 1MB)",
+    default= 5 * 1024 * 1024,
+    help="Maximum file size in bytes (default: 5MB)",
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file path")
 @click.option(

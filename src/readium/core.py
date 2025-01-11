@@ -20,14 +20,44 @@ def is_git_url(url: str) -> bool:
 def clone_repository(url: str, target_dir: str) -> None:
     """Clone a git repository to the target directory"""
     try:
-        subprocess.run(
-            ["git", "clone", "--depth=1", url, target_dir],
-            check=True,
-            capture_output=True,
-        )
+        # If the URL contains '@', it is likely to have a token
+        if '@' in url:
+            # Extract the token and reconstruct the URL
+            parts = url.split('@')
+            token = parts[0].split('://')[-1]
+            base_url = '://'.join(parts[0].split('://')[:-1])
+            repo_url = f"{base_url}://{parts[1]}"
+            
+            # Log for debugging (hiding the full token)
+            token_preview = f"{token[:4]}...{token[-4:]}" if len(token) > 8 else "****"
+            print(f"DEBUG: Attempting to clone with token: {token_preview}")
+            
+            # Use the token as a password with an empty username
+            env = os.environ.copy()
+            env['GIT_ASKPASS'] = 'echo'
+            env['GIT_USERNAME'] = ''
+            env['GIT_PASSWORD'] = token
+            
+            subprocess.run(
+                ["git", "clone", "--depth=1", repo_url, target_dir],
+                check=True,
+                capture_output=True,
+                env=env
+            )
+        else:
+            subprocess.run(
+                ["git", "clone", "--depth=1", url, target_dir],
+                check=True,
+                capture_output=True,
+            )
     except subprocess.CalledProcessError as e:
-        raise ValueError(f"Failed to clone repository: {e.stderr.decode()}")
-
+        error_msg = e.stderr.decode()
+        # Hide the token in the error message if present
+        if '@' in url:
+            parts = url.split('@')
+            token = parts[0].split('://')[-1]
+            error_msg = error_msg.replace(token, '****')
+        raise ValueError(f"Failed to clone repository: {error_msg}")
 
 @dataclass
 class ReadConfig:

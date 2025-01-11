@@ -139,6 +139,7 @@ DEFAULT_INCLUDE_EXTENSIONS = {
     ".cfg",
     ".conf",
     ".json",
+    ".xml",
 }
 
 # Define extensiones que requieren MarkItDown
