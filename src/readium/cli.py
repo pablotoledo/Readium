@@ -27,6 +27,21 @@ console = Console()
 @click.option(
     "--include-ext", "-i", multiple=True, help="Additional extensions to include"
 )
+@click.option(
+    "--use-markitdown/--no-markitdown", "-m/-M",
+    default=False,
+    help="Use MarkItDown for compatible file formats",
+)
+@click.option(
+    "--markitdown-ext", "-k",
+    multiple=True,
+    help="Specific extensions to process with MarkItDown (default: all supported)",
+)
+@click.option(
+    "--debug/--no-debug", "-d/-D",
+    default=False,
+    help="Enable debug mode",
+)
 def main(
     path: str,
     target_dir: str,
@@ -34,6 +49,9 @@ def main(
     output: str,
     exclude_dir: tuple,
     include_ext: tuple,
+    use_markitdown: bool,
+    markitdown_ext: tuple,
+    debug: bool,
 ):
     """Read and analyze documentation from a directory or repository"""
     try:
@@ -42,6 +60,9 @@ def main(
             exclude_dirs=DEFAULT_EXCLUDE_DIRS | set(exclude_dir),
             include_extensions=DEFAULT_INCLUDE_EXTENSIONS | set(include_ext),
             target_dir=target_dir,
+            use_markitdown=use_markitdown,
+            markitdown_extensions=set(markitdown_ext) if markitdown_ext else None,
+            debug=debug
         )
 
         reader = Readium(config)
