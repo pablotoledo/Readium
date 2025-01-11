@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 from .config import (DEFAULT_EXCLUDE_DIRS, DEFAULT_EXCLUDE_FILES,
-                     DEFAULT_INCLUDE_EXTENSIONS)
+                     DEFAULT_INCLUDE_EXTENSIONS, MARKITDOWN_EXTENSIONS)
 from markitdown import MarkItDown, FileConversionException, UnsupportedFormatException
 
 
@@ -86,20 +86,21 @@ class Readium:
             return False
 
         # Check size
-        file_size = file_path.stat().st_size
-        if file_size > self.config.max_file_size:
-            self.log_debug(f"Excluding {file_path} due to size: {file_size} > {self.config.max_file_size}")
-            return False
+        if self.config.max_file_size >= 0:  # this is important
+            file_size = file_path.stat().st_size
+            if file_size > self.config.max_file_size:
+                self.log_debug(f"Excluding {file_path} due to size: {file_size} > {self.config.max_file_size}")
+                return False
 
         if self.config.use_markitdown:
-            # Si markitdown está activo y se especificaron extensiones, usar solo esas
+            # If markitdown is active and extensions were specified, use only those
             if self.config.markitdown_extensions:
                 if file_ext in self.config.markitdown_extensions:
                     self.log_debug(f"Including {file_path} for markitdown processing")
                     return True
                 self.log_debug(f"Extension {file_ext} not in markitdown extensions: {self.config.markitdown_extensions}")
             else:
-                # Si no se especificaron extensiones, intentar usar markitdown para todo
+                # If no extensions were specified, try to use markitdown for everything
                 try:
                     self.markitdown.convert(str(file_path))
                     self.log_debug(f"Including {file_path} for markitdown processing (auto-detected)")
@@ -108,14 +109,14 @@ class Readium:
                     self.log_debug(f"Markitdown couldn't process {file_path}: {str(e)}")
                     pass
 
-        # Si no se usa markitdown o el archivo no es compatible con markitdown,
-        # verificar si está en las extensiones incluidas
+        # If markitdown is not used or the file is not compatible with markitdown,
+        # check if it is in the included extensions
         supported_extensions = self.config.include_extensions | (self.config.markitdown_extensions or set())
         if not any(str(file_path).lower().endswith(ext) for ext in supported_extensions):
             self.log_debug(f"Extension {file_ext} not in supported extensions: {supported_extensions}")
             return False
 
-        # Solo verificar si es binario para archivos que no son de markitdown
+        # Only check if it is binary for files that are not markitdown
         if file_ext not in (self.config.markitdown_extensions or set()):
             is_bin = self.is_binary(file_path)
             if is_bin:
@@ -144,7 +145,7 @@ class Readium:
             with tempfile.TemporaryDirectory() as temp_dir:
                 try:
                     clone_repository(path, temp_dir)
-                    return self._process_directory(Path(temp_dir))
+                    return self._process_directory(Path(temp_dir), original_path=path)
                 except Exception as e:
                     raise ValueError(f"Error processing git repository: {str(e)}")
         else:
@@ -187,7 +188,7 @@ class Readium:
             self.log_debug(f"Error processing file: {str(e)}")
             return None
 
-    def _process_directory(self, path: Path) -> Tuple[str, str, str]:
+    def _process_directory(self, path: Path, original_path: str = None) -> Tuple[str, str, str]:
         """Internal method to process a directory"""
         files = []
 
@@ -229,7 +230,7 @@ class Readium:
         )
 
         # Generate summary
-        summary = f"Path analyzed: {path}\n"
+        summary = f"Path analyzed: {original_path or path}\n"
         summary += f"Files processed: {len(files)}\n"
         if self.config.target_dir:
             summary += f"Target directory: {self.config.target_dir}\n"

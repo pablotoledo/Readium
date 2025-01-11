@@ -153,7 +153,7 @@ MARKITDOWN_EXTENSIONS = {
 @dataclass
 class ReadConfig:
     """Configuration for document reading"""
-    max_file_size: int = 1024 * 1024  # 1MB default
+    max_file_size: int = 5 * 1024 * 1024  # 5MB default
     exclude_dirs: Set[str] = field(default_factory=lambda: DEFAULT_EXCLUDE_DIRS.copy())
     exclude_files: Set[str] = field(default_factory=lambda: DEFAULT_EXCLUDE_FILES.copy())
     include_extensions: Set[str] = field(default_factory=lambda: DEFAULT_INCLUDE_EXTENSIONS.copy())
