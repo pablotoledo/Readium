@@ -11,13 +11,13 @@ console = Console()
 
 
 @click.command()
-@click.argument("path", type=str) 
+@click.argument("path", type=str)
 @click.option("--target-dir", "-t", help="Target subdirectory to analyze")
 @click.option(
     "--max-size",
     "-s",
     type=int,
-    default= 5 * 1024 * 1024,
+    default=5 * 1024 * 1024,
     help="Maximum file size in bytes (default: 5MB)",
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file path")
@@ -28,17 +28,20 @@ console = Console()
     "--include-ext", "-i", multiple=True, help="Additional extensions to include"
 )
 @click.option(
-    "--use-markitdown/--no-markitdown", "-m/-M",
+    "--use-markitdown/--no-markitdown",
+    "-m/-M",
     default=False,
     help="Use MarkItDown for compatible file formats",
 )
 @click.option(
-    "--markitdown-ext", "-k",
+    "--markitdown-ext",
+    "-k",
     multiple=True,
     help="Specific extensions to process with MarkItDown (default: all supported)",
 )
 @click.option(
-    "--debug/--no-debug", "-d/-D",
+    "--debug/--no-debug",
+    "-d/-D",
     default=False,
     help="Enable debug mode",
 )
@@ -62,7 +65,7 @@ def main(
             target_dir=target_dir,
             use_markitdown=use_markitdown,
             markitdown_extensions=set(markitdown_ext) if markitdown_ext else None,
-            debug=debug
+            debug=debug,
         )
 
         reader = Readium(config)

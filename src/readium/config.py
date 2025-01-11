@@ -1,5 +1,5 @@
-from typing import Optional, Set
 from dataclasses import dataclass, field
+from typing import Optional, Set
 
 DEFAULT_EXCLUDE_DIRS = {
     ".git",
@@ -151,14 +151,22 @@ MARKITDOWN_EXTENSIONS = {
     ".msg",
 }
 
+
 @dataclass
 class ReadConfig:
     """Configuration for document reading"""
+
     max_file_size: int = 5 * 1024 * 1024  # 5MB default
     exclude_dirs: Set[str] = field(default_factory=lambda: DEFAULT_EXCLUDE_DIRS.copy())
-    exclude_files: Set[str] = field(default_factory=lambda: DEFAULT_EXCLUDE_FILES.copy())
-    include_extensions: Set[str] = field(default_factory=lambda: DEFAULT_INCLUDE_EXTENSIONS.copy())
+    exclude_files: Set[str] = field(
+        default_factory=lambda: DEFAULT_EXCLUDE_FILES.copy()
+    )
+    include_extensions: Set[str] = field(
+        default_factory=lambda: DEFAULT_INCLUDE_EXTENSIONS.copy()
+    )
     target_dir: Optional[str] = None
     use_markitdown: bool = False
-    markitdown_extensions: Optional[Set[str]] = field(default_factory=lambda: MARKITDOWN_EXTENSIONS.copy())
+    markitdown_extensions: Optional[Set[str]] = field(
+        default_factory=lambda: MARKITDOWN_EXTENSIONS.copy()
+    )
     debug: bool = False
