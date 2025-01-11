@@ -3,22 +3,39 @@ name = "readium"
 version = "0.1.0"
 description = "A tool to extract and analyze documentation from repositories and directories"
 authors = [
-    {name = "Pablo Toledo",email = "pablotoledo@users.noreply.github.com"}
+    {name = "Pablo Toledo", email = "pablotoledo@users.noreply.github.com"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "click (>=8.1.8,<9.0.0)",
-    "rich (>=13.9.4,<14.0.0)",
-    "black (>=24.10.0,<25.0.0)",
-    "isort (>=5.13.2,<6.0.0)",
-    "markitdown (>=0.0.1a3,<0.0.2)"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Documentation",
 ]
+dependencies = [
+    "click>=8.1.8,<9.0.0",
+    "rich>=13.9.4,<14.0.0",
+    "black>=24.10.0,<25.0.0",
+    "isort>=5.13.2,<6.0.0",
+    "markitdown>=0.0.1a3,<0.0.2"
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/readium"
+Repository = "https://github.com/yourusername/readium.git"
+Issues = "https://github.com/yourusername/readium/issues"
 
 [project.scripts]
 readium = "readium.cli:main"
 
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
