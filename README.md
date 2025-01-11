@@ -2,7 +2,9 @@
 
 A powerful Python tool for extracting, analyzing, and converting documentation from repositories and directories into accessible formats.
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+<p align="center">
+  <img src="logo.webp" alt="Readium" width="80%">
+</p>
 
 ## ✨ Features
 

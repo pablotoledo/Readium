@@ -88,12 +88,19 @@ class Readium:
         except Exception:
             return True
 
-    def should_process_file(self, file_path: Union[str, Path]) -> bool:
+    def should_process_file(self, file_path: Union) -> bool:
         """Determine if a file should be processed based on configuration"""
         file_path = Path(file_path)
         file_ext = os.path.splitext(file_path)[1].lower()
 
         self.log_debug(f"Checking file: {file_path}")
+
+        # First check if the file is in an excluded directory
+        parts = file_path.parts
+        for excluded_dir in self.config.exclude_dirs:
+            if excluded_dir in parts:
+                self.log_debug(f"Excluding {file_path} due to being in excluded directory {excluded_dir}")
+                return False
 
         # Check exclude patterns - handle macOS @ suffix
         base_name = str(file_path.name).rstrip("@")
@@ -102,12 +109,15 @@ class Readium:
             return False
 
         # Check size
-        if self.config.max_file_size >= 0:  # this is important
-            file_size = file_path.stat().st_size
-            if file_size > self.config.max_file_size:
-                self.log_debug(
-                    f"Excluding {file_path} due to size: {file_size} > {self.config.max_file_size}"
-                )
+        if self.config.max_file_size >= 0:
+            try:
+                file_size = file_path.stat().st_size
+                if file_size > self.config.max_file_size:
+                    self.log_debug(
+                        f"Excluding {file_path} due to size: {file_size} > {self.config.max_file_size}"
+                    )
+                    return False
+            except FileNotFoundError:
                 return False
 
         if self.config.use_markitdown:
@@ -119,33 +129,15 @@ class Readium:
                 self.log_debug(
                     f"Extension {file_ext} not in markitdown extensions: {self.config.markitdown_extensions}"
                 )
-            else:
-                # If no extensions were specified, try to use markitdown for everything
-                try:
-                    self.markitdown.convert(str(file_path))
-                    self.log_debug(
-                        f"Including {file_path} for markitdown processing (auto-detected)"
-                    )
-                    return True
-                except (FileConversionException, UnsupportedFormatException) as e:
-                    self.log_debug(f"Markitdown couldn't process {file_path}: {str(e)}")
-                    pass
 
         # If markitdown is not used or the file is not compatible with markitdown,
         # check if it is in the included extensions
-        supported_extensions = self.config.include_extensions | (
-            self.config.markitdown_extensions or set()
-        )
-        if not any(
-            str(file_path).lower().endswith(ext) for ext in supported_extensions
-        ):
-            self.log_debug(
-                f"Extension {file_ext} not in supported extensions: {supported_extensions}"
-            )
+        if file_ext not in self.config.include_extensions:
+            self.log_debug(f"Extension {file_ext} not in supported extensions")
             return False
 
-        # Only check if it is binary for files that are not markitdown
-        if file_ext not in (self.config.markitdown_extensions or set()):
+        # Check if binary only for non-markitdown files
+        if not (self.config.use_markitdown and self.config.markitdown_extensions and file_ext in self.config.markitdown_extensions):
             is_bin = self.is_binary(file_path)
             if is_bin:
                 self.log_debug(f"Excluding {file_path} because it's binary")
