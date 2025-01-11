@@ -5,11 +5,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 
-from markitdown import (FileConversionException, MarkItDown,
-                        UnsupportedFormatException)
+from markitdown import FileConversionException, MarkItDown, UnsupportedFormatException
 
-from .config import (DEFAULT_EXCLUDE_DIRS, DEFAULT_EXCLUDE_FILES,
-                     DEFAULT_INCLUDE_EXTENSIONS, MARKITDOWN_EXTENSIONS, ReadConfig)
+from .config import (
+    DEFAULT_EXCLUDE_DIRS,
+    DEFAULT_EXCLUDE_FILES,
+    DEFAULT_INCLUDE_EXTENSIONS,
+    MARKITDOWN_EXTENSIONS,
+    ReadConfig,
+)
 
 
 def is_git_url(url: str) -> bool:
@@ -99,7 +103,9 @@ class Readium:
         parts = file_path.parts
         for excluded_dir in self.config.exclude_dirs:
             if excluded_dir in parts:
-                self.log_debug(f"Excluding {file_path} due to being in excluded directory {excluded_dir}")
+                self.log_debug(
+                    f"Excluding {file_path} due to being in excluded directory {excluded_dir}"
+                )
                 return False
 
         # Check exclude patterns - handle macOS @ suffix
@@ -120,24 +126,24 @@ class Readium:
             except FileNotFoundError:
                 return False
 
-        if self.config.use_markitdown:
-            # If markitdown is active and extensions were specified, use only those
-            if self.config.markitdown_extensions:
-                if file_ext in self.config.markitdown_extensions:
-                    self.log_debug(f"Including {file_path} for markitdown processing")
-                    return True
-                self.log_debug(
-                    f"Extension {file_ext} not in markitdown extensions: {self.config.markitdown_extensions}"
-                )
+        should_use_markitdown = (
+            self.config.use_markitdown
+            and self.config.markitdown_extensions
+            and file_ext in self.config.markitdown_extensions
+        )
 
-        # If markitdown is not used or the file is not compatible with markitdown,
-        # check if it is in the included extensions
+        if should_use_markitdown:
+            self.log_debug(f"Including {file_path} for markitdown processing")
+            return True
+
+        # If not using markitdown or file isn't compatible with markitdown,
+        # check if it's in the included extensions
         if file_ext not in self.config.include_extensions:
             self.log_debug(f"Extension {file_ext} not in supported extensions")
             return False
 
         # Check if binary only for non-markitdown files
-        if not (self.config.use_markitdown and self.config.markitdown_extensions and file_ext in self.config.markitdown_extensions):
+        if not should_use_markitdown:
             is_bin = self.is_binary(file_path)
             if is_bin:
                 self.log_debug(f"Excluding {file_path} because it's binary")

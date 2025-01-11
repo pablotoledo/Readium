@@ -142,12 +142,14 @@ DEFAULT_INCLUDE_EXTENSIONS = {
     ".xml",
 }
 
-# Define extensiones que requieren MarkItDown
 MARKITDOWN_EXTENSIONS = {
     ".pdf",
     ".docx",
     ".xlsx",
+    ".xls",
     ".pptx",
+    ".html",
+    ".htm",
     ".msg",
 }
 

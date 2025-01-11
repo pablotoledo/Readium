@@ -4,7 +4,11 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .config import DEFAULT_EXCLUDE_DIRS, DEFAULT_INCLUDE_EXTENSIONS
+from .config import (
+    DEFAULT_EXCLUDE_DIRS,
+    DEFAULT_INCLUDE_EXTENSIONS,
+    MARKITDOWN_EXTENSIONS,
+)
 from .core import ReadConfig, Readium
 
 console = Console()
@@ -64,7 +68,9 @@ def main(
             include_extensions=DEFAULT_INCLUDE_EXTENSIONS | set(include_ext),
             target_dir=target_dir,
             use_markitdown=use_markitdown,
-            markitdown_extensions=set(markitdown_ext) if markitdown_ext else None,
+            markitdown_extensions=(
+                set(markitdown_ext) if markitdown_ext else MARKITDOWN_EXTENSIONS
+            ),
             debug=debug,
         )
 
