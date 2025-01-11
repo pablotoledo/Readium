@@ -24,9 +24,20 @@ dependencies = [
     "click>=8.1.8,<9.0.0",
     "rich>=13.9.4,<14.0.0",
     "black>=24.10.0,<25.0.0",
-    "isort>=5.13.2,<6.0.0",
+    "isort>=5.12.0,<6.0.0",
     "markitdown>=0.0.1a3,<0.0.2",
     "pypdf>=3.0.1,<4.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-mock",
+    "mypy",
+    "black",
+    "isort",
+    "pre-commit",
+    "hatch",
 ]
 
 [project.urls]
