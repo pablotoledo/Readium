@@ -1,0 +1,60 @@
+{
+    "name": "Readium Development",
+    "dockerFile": "Dockerfile",
+    "build": {
+        "context": "..",
+        "args": {
+            "VARIANT": "3.10"
+        }
+    },
+
+    // Configure tool-specific properties
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.formatting.provider": "black",
+                "python.linting.enabled": true,
+                "python.linting.mypyEnabled": true
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-vscode.cpptools",
+                "clemenspeters.format-json",
+                "davidanson.vscode-markdownlint",
+                "george-alisson.html-preview-vscode",
+                "github.copilot",
+                "github.copilot-chat",
+                "ms-dotnettools.vscode-dotnet-runtime",
+                "ms-python.debugpy",
+                "ms-python.vscode-pylance",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.jupyter-keymap",
+                "ms-toolsai.jupyter-renderers",
+                "ms-toolsai.vscode-ai",
+                "ms-toolsai.vscode-ai-remote",
+                "ms-toolsai.vscode-jupyter-cell-tags",
+                "ms-toolsai.vscode-jupyter-slideshow",
+                "ms-vscode.powershell",
+                "rangav.vscode-thunder-client",
+                "rapidapi.vscode-rapidapi-client",
+                "rapidapi.vscode-services",
+                "waderyan.gitblame",
+                "hediet.vscode-drawio",
+                "pomdtr.excalidraw-editor"
+            ]
+        }
+    },
+
+    // Install project dependencies and dev tools
+    "postCreateCommand": "pip install --user -e '.[dev]' && pip install hatch pre-commit pytest mypy black isort",
+
+    // Comment out to connect as root instead
+    "remoteUser": "vscode",
+
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers-contrib/features/hatch:2": {}
+    }
+}
