@@ -9,7 +9,7 @@ from markitdown import (FileConversionException, MarkItDown,
                         UnsupportedFormatException)
 
 from .config import (DEFAULT_EXCLUDE_DIRS, DEFAULT_EXCLUDE_FILES,
-                     DEFAULT_INCLUDE_EXTENSIONS, MARKITDOWN_EXTENSIONS)
+                     DEFAULT_INCLUDE_EXTENSIONS, MARKITDOWN_EXTENSIONS, ReadConfig)
 
 
 def is_git_url(url: str) -> bool:
@@ -60,24 +60,6 @@ def clone_repository(url: str, target_dir: str) -> None:
             token = parts[0].split("://")[-1]
             error_msg = error_msg.replace(token, "****")
         raise ValueError(f"Failed to clone repository: {error_msg}")
-
-
-@dataclass
-class ReadConfig:
-    """Configuration for document reading"""
-
-    max_file_size: int = 1024 * 1024  # 1MB default
-    exclude_dirs: Set[str] = field(default_factory=lambda: DEFAULT_EXCLUDE_DIRS.copy())
-    exclude_files: Set[str] = field(
-        default_factory=lambda: DEFAULT_EXCLUDE_FILES.copy()
-    )
-    include_extensions: Set[str] = field(
-        default_factory=lambda: DEFAULT_INCLUDE_EXTENSIONS.copy()
-    )
-    target_dir: Optional[str] = None
-    use_markitdown: bool = False
-    markitdown_extensions: Optional[Set[str]] = None
-    debug: bool = False  # Add this line to include the debug attribute
 
 
 class Readium:
