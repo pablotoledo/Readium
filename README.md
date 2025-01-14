@@ -102,25 +102,25 @@ The `ReadConfig` class supports the following options:
 config = ReadConfig(
     # File size limit in bytes (default: 5MB)
     max_file_size=5 * 1024 * 1024,
-    
+
     # Directories to exclude (extends default set)
     exclude_dirs={'custom_exclude', 'temp'},
-    
+
     # Files to exclude (extends default set)
     exclude_files={'.custom_exclude', '*.tmp'},
-    
+
     # File extensions to include (extends default set)
     include_extensions={'.custom', '.special'},
-    
+
     # Target specific subdirectory
     target_dir='docs',
-    
+
     # Enable MarkItDown integration
     use_markitdown=True,
-    
+
     # Specify extensions for MarkItDown processing
     markitdown_extensions={'.pdf', '.docx', '.xlsx'},
-    
+
     # Enable debug mode
     debug=False
 )
@@ -165,6 +165,8 @@ Readium generates three types of output:
 2. Install development dependencies:
    ```bash
    pip install -e ".[dev]"
+   # or
+   poetry install --with dev
    ```
 3. Install pre-commit hooks:
    ```bash
