@@ -1,13 +1,17 @@
-[project]
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
 name = "readium"
 version = "0.1.2"
 description = "A tool to extract and analyze documentation from repositories and directories"
-authors = [
-    {name = "Pablo Toledo", email = "pablotoledo@users.noreply.github.com"}
-]
-license = {text = "MIT"}
+authors = ["Pablo Toledo <pablotoledo@users.noreply.github.com>"]
+license = "MIT"
 readme = "README.md"
-requires-python = ">=3.10"
+packages = [{include = "readium", from = "src"}]
+repository = "https://github.com/yourusername/readium.git"
+homepage = "https://github.com/yourusername/readium"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -37,15 +41,7 @@ pre-commit = "*"
 hatch = "*"
 pypdf = ">=3.0.1,<4.0.0"
 
-[tool.poetry.extras]
-dev = ["pytest", "pytest-mock", "mypy", "black>=24.10.0,<25.0.0", "isort>=5.12.0,<6.0.0", "pre-commit", "hatch", "pypdf>=3.0.1,<4.0.0"]
-
-[project.urls]
-Homepage = "https://github.com/yourusername/readium"
-Repository = "https://github.com/yourusername/readium.git"
-Issues = "https://github.com/yourusername/readium/issues"
-
-[project.scripts]
+[tool.poetry.scripts]
 readium = "readium.cli:main"
 
 [tool.isort]
@@ -56,7 +52,3 @@ force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
 line_length = 88
-
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
