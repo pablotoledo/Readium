@@ -114,7 +114,20 @@ def main(
             console.print("\n[bold]Tree:[/bold]")
             console.print(tree)
             console.print("\n[bold]Content:[/bold]")
-            console.print(content)
+            try:
+                console.print(content)
+            except Exception as e:
+                # Handle unprintable content
+                console.print(
+                    "\n[red]Error displaying content on screen. Check the output file for details.[/red]"
+                )
+                if not output:
+                    output = "output.txt"
+                with open(output, "w", encoding="utf-8") as f:
+                    f.write(f"Summary:\n{summary}\n\n")
+                    f.write(f"Tree:\n{tree}\n\n")
+                    f.write(f"Content:\n{content}")
+                console.print(f"[green]Content saved to {output}[/green]")
 
     except Exception as e:
         print_error(console, str(e))
