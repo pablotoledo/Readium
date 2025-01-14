@@ -10,12 +10,30 @@ from .config import (
     MARKITDOWN_EXTENSIONS,
 )
 from .core import ReadConfig, Readium
+from .utils.error_handling import print_error
 
 console = Console()
 
 
-@click.command()
-@click.argument("path", type=str)
+@click.command(
+    help="""
+Read and analyze documentation from directories or repositories.
+
+Examples:
+    # Process a local directory
+    readium /path/to/directory
+
+    # Process a Git repository
+    readium https://github.com/username/repository
+
+    # Save output to a file
+    readium /path/to/directory -o output.md
+
+    # Process specific subdirectory
+    readium /path/to/directory -t python
+"""
+)
+@click.argument("path", type=str)  # Removed the 'help' argument
 @click.option("--target-dir", "-t", help="Target subdirectory to analyze")
 @click.option(
     "--max-size",
@@ -24,7 +42,14 @@ console = Console()
     default=5 * 1024 * 1024,
     help="Maximum file size in bytes (default: 5MB)",
 )
-@click.option("--output", "-o", type=click.Path(), help="Output file path")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="""Output file path. If specified, the results will be saved to this file
+    instead of displaying in the terminal. For example:
+    readium input.md -o output.md""",
+)
 @click.option(
     "--exclude-dir", "-x", multiple=True, help="Additional directories to exclude"
 )
@@ -89,10 +114,23 @@ def main(
             console.print("\n[bold]Tree:[/bold]")
             console.print(tree)
             console.print("\n[bold]Content:[/bold]")
-            console.print(content)
+            try:
+                console.print(content)
+            except Exception as e:
+                # Handle unprintable content
+                console.print(
+                    "\n[red]Error displaying content on screen. Check the output file for details.[/red]"
+                )
+                if not output:
+                    output = "output.txt"
+                with open(output, "w", encoding="utf-8") as f:
+                    f.write(f"Summary:\n{summary}\n\n")
+                    f.write(f"Tree:\n{tree}\n\n")
+                    f.write(f"Content:\n{content}")
+                console.print(f"[green]Content saved to {output}[/green]")
 
     except Exception as e:
-        console.print(f"[red]Error: {str(e)}[/red]")
+        print_error(console, str(e))
         raise click.Abort()
 
 

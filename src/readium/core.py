@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union, overload
 
 from markitdown import FileConversionException, MarkItDown, UnsupportedFormatException
 
@@ -92,35 +92,35 @@ class Readium:
         except Exception:
             return True
 
-    def should_process_file(self, file_path: Union) -> bool:
+    def should_process_file(self, file_path: Union[str, Path]) -> bool:
         """Determine if a file should be processed based on configuration"""
-        file_path = Path(file_path)
-        file_ext = os.path.splitext(file_path)[1].lower()
+        path = Path(file_path)
+        file_ext = os.path.splitext(str(path))[1].lower()
 
-        self.log_debug(f"Checking file: {file_path}")
+        self.log_debug(f"Checking file: {path}")
 
         # First check if the file is in an excluded directory
-        parts = file_path.parts
+        parts = path.parts
         for excluded_dir in self.config.exclude_dirs:
             if excluded_dir in parts:
                 self.log_debug(
-                    f"Excluding {file_path} due to being in excluded directory {excluded_dir}"
+                    f"Excluding {path} due to being in excluded directory {excluded_dir}"
                 )
                 return False
 
         # Check exclude patterns - handle macOS @ suffix
-        base_name = str(file_path.name).rstrip("@")
+        base_name = path.name.rstrip("@")
         if any(pattern in base_name for pattern in self.config.exclude_files):
-            self.log_debug(f"Excluding {file_path} due to exclude patterns")
+            self.log_debug(f"Excluding {path} due to exclude patterns")
             return False
 
         # Check size
         if self.config.max_file_size >= 0:
             try:
-                file_size = file_path.stat().st_size
+                file_size = path.stat().st_size
                 if file_size > self.config.max_file_size:
                     self.log_debug(
-                        f"Excluding {file_path} due to size: {file_size} > {self.config.max_file_size}"
+                        f"Excluding {path} due to size: {file_size} > {self.config.max_file_size}"
                     )
                     return False
             except FileNotFoundError:
@@ -128,12 +128,12 @@ class Readium:
 
         should_use_markitdown = (
             self.config.use_markitdown
-            and self.config.markitdown_extensions
+            and self.config.markitdown_extensions is not None
             and file_ext in self.config.markitdown_extensions
         )
 
         if should_use_markitdown:
-            self.log_debug(f"Including {file_path} for markitdown processing")
+            self.log_debug(f"Including {path} for markitdown processing")
             return True
 
         # If not using markitdown or file isn't compatible with markitdown,
@@ -144,12 +144,12 @@ class Readium:
 
         # Check if binary only for non-markitdown files
         if not should_use_markitdown:
-            is_bin = self.is_binary(file_path)
+            is_bin = self.is_binary(path)
             if is_bin:
-                self.log_debug(f"Excluding {file_path} because it's binary")
+                self.log_debug(f"Excluding {path} because it's binary")
                 return False
 
-        self.log_debug(f"Including {file_path} for processing")
+        self.log_debug(f"Including {path} for processing")
         return True
 
     def read_docs(self, path: Union[str, Path]) -> Tuple[str, str, str]:
@@ -175,24 +175,27 @@ class Readium:
                 except Exception as e:
                     raise ValueError(f"Error processing git repository: {str(e)}")
         else:
-            path = Path(path)
-            if not path.exists():
+            path_obj = Path(path)
+            if not path_obj.exists():
                 raise ValueError(f"Path does not exist: {path}")
-            return self._process_directory(path)
+            return self._process_directory(path_obj)
 
-    def _process_file(self, file_path: Path, relative_path: Path) -> Optional[dict]:
+    def _process_file(
+        self, file_path: Path, relative_path: Path
+    ) -> Optional[Dict[str, str]]:
         """Process a single file, using markitdown if enabled"""
         self.log_debug(f"Processing file: {file_path}")
 
         try:
             if self.config.use_markitdown:
-                file_ext = os.path.splitext(file_path)[1].lower()
+                file_ext = os.path.splitext(str(file_path))[1].lower()
                 if (
-                    not self.config.markitdown_extensions
-                    or file_ext in self.config.markitdown_extensions
+                    self.config.markitdown_extensions is not None
+                    and file_ext in self.config.markitdown_extensions
                 ):
                     try:
                         self.log_debug(f"Attempting to process with markitdown")
+                        assert self.markitdown is not None
                         result = self.markitdown.convert(str(file_path))
                         self.log_debug("Successfully processed with markitdown")
                         return {
@@ -219,10 +222,10 @@ class Readium:
             return None
 
     def _process_directory(
-        self, path: Path, original_path: str = None
+        self, path: Path, original_path: Optional[str] = None
     ) -> Tuple[str, str, str]:
         """Internal method to process a directory"""
-        files = []
+        files: List[Dict[str, str]] = []
 
         # If target_dir is specified, look only in that subdirectory
         if self.config.target_dir:
