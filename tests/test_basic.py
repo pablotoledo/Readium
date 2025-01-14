@@ -11,4 +11,4 @@ def test_read_config():
 def test_readium_init():
     reader = Readium()
     assert reader.config is not None
-    assert reader.markitdown is None  # By default, markitdown is disabled
+    assert reader.markitdown is None
