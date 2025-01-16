@@ -2,6 +2,10 @@
 
 A powerful Python tool for extracting, analyzing, and converting documentation from repositories and directories into accessible formats.
 
+<p align="center">
+  <img src="logo.webp" alt="Readium" width="80%">
+</p>
+
 ## ✨ Features
 
 - 📂 Extract documentation from local directories or Git repositories
