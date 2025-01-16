@@ -2,13 +2,11 @@
 
 A powerful Python tool for extracting, analyzing, and converting documentation from repositories and directories into accessible formats.
 
-<p align="center">
-  <img src="logo.webp" alt="Readium" width="80%">
-</p>
-
 ## ✨ Features
 
 - 📂 Extract documentation from local directories or Git repositories
+  - Support for private repositories using tokens
+  - Secure token handling and masking
 - 🔄 Convert multiple document formats to Markdown using MarkItDown integration
 - 🎯 Target specific subdirectories for focused analysis
 - ⚡ Process a wide range of file types:
@@ -22,11 +20,18 @@ A powerful Python tool for extracting, analyzing, and converting documentation f
   - Directory exclusion patterns
   - Binary file detection
   - Debug mode for detailed processing information
+- 🔍 Advanced error handling and debugging:
+  - Detailed debug logging
+  - Graceful handling of unprintable content
+  - Robust error reporting with Rich console support
 
 ## 🚀 Installation
 
 ```bash
 pip install readium
+
+# Or with poetry
+poetry add readium
 ```
 
 ## 📋 Usage
@@ -38,8 +43,11 @@ Basic usage:
 # Process a local directory
 readium /path/to/directory
 
-# Process a Git repository
+# Process a public Git repository
 readium https://github.com/username/repository
+
+# Process a private Git repository with token
+readium https://token@github.com/username/repository
 
 # Save output to a file
 readium /path/to/directory -o output.md
@@ -82,11 +90,14 @@ config = ReadConfig(
 # Initialize reader
 reader = Readium(config)
 
-# Process directory or repository
+# Process directory
 summary, tree, content = reader.read_docs('/path/to/directory')
 
-# Process Git repository
+# Process public Git repository
 summary, tree, content = reader.read_docs('https://github.com/username/repo')
+
+# Process private Git repository with token
+summary, tree, content = reader.read_docs('https://token@github.com/username/repo')
 
 # Access results
 print("Summary:", summary)
@@ -126,6 +137,39 @@ config = ReadConfig(
 )
 ```
 
+### Default Configuration
+
+#### Default Excluded Directories
+```python
+DEFAULT_EXCLUDE_DIRS = {
+    ".git", "node_modules", "__pycache__", "assets",
+    "img", "images", "dist", "build", ".next",
+    ".vscode", ".idea", "bin", "obj", "target",
+    "out", ".venv", "venv", ".gradle",
+    ".pytest_cache", ".mypy_cache", "htmlcov",
+    "coverage", ".vs", "Pods"
+}
+```
+
+#### Default Excluded Files
+```python
+DEFAULT_EXCLUDE_FILES = {
+    ".pyc", ".pyo", ".pyd", ".DS_Store",
+    ".gitignore", ".env", "Thumbs.db",
+    "desktop.ini", "npm-debug.log",
+    "yarn-error.log", "pnpm-debug.log",
+    "*.log", "*.lock"
+}
+```
+
+#### Default MarkItDown Extensions
+```python
+MARKITDOWN_EXTENSIONS = {
+    ".pdf", ".docx", ".xlsx", ".xls",
+    ".pptx", ".html", ".htm", ".msg"
+}
+```
+
 ## 📜 Output Format
 
 Readium generates three types of output:
@@ -136,6 +180,7 @@ Readium generates three types of output:
    Files processed: 42
    Target directory: docs
    Using MarkItDown for compatible files
+   MarkItDown extensions: .pdf, .docx, .xlsx, ...
    ```
 
 2. **Tree**: Visual representation of processed files
@@ -159,19 +204,43 @@ Readium generates three types of output:
    [File content here]
    ```
 
+### Error Handling
+
+Readium provides robust error handling through the `error_handling` module:
+
+- Console-based error reporting with Rich formatting
+- Fallback handling for markup-containing error messages
+- Automatic handling of unprintable content with file output
+- Debug logging for troubleshooting issues
+
 ## 🛠️ Development
 
 1. Clone the repository
 2. Install development dependencies:
    ```bash
+   # Using pip
    pip install -e ".[dev]"
-   # or
+   
+   # Or using Poetry
    poetry install --with dev
    ```
 3. Install pre-commit hooks:
    ```bash
    pre-commit install
    ```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run tests without warnings
+pytest -p no:warnings
+
+# Run tests for specific Python version
+poetry run pytest
+```
 
 ## 🤝 Contributing
 
@@ -184,3 +253,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🙏 Acknowledgments
 
 - Microsoft and MarkItDown for their powerful document conversion tool
+- Rich library for beautiful console output
+- Click for the powerful CLI interface
