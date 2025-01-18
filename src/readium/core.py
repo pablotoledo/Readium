@@ -38,11 +38,11 @@ def clone_repository(url: str, target_dir: str, branch: Optional[str] = None) ->
     try:
         # Base command
         cmd = ["git", "clone", "--depth=1"]
-        
+
         # Add branch specification if provided
         if branch:
             cmd.extend(["-b", branch])
-            
+
         # If the URL contains '@', it is likely to have a token
         if "@" in url:
             # Extract the token and reconstruct the URL
@@ -68,7 +68,7 @@ def clone_repository(url: str, target_dir: str, branch: Optional[str] = None) ->
         else:
             cmd.extend([url, target_dir])
             subprocess.run(cmd, check=True, capture_output=True)
-            
+
     except subprocess.CalledProcessError as e:
         error_msg = e.stderr.decode()
         # Hide the token in the error message if present
@@ -166,7 +166,9 @@ class Readium:
         self.log_debug(f"Including {path} for processing")
         return True
 
-    def read_docs(self, path: Union[str, Path], branch: Optional[str] = None) -> Tuple[str, str, str]:
+    def read_docs(
+        self, path: Union[str, Path], branch: Optional[str] = None
+    ) -> Tuple[str, str, str]:
         """
         Read documentation from a directory or git repository
 
@@ -183,7 +185,7 @@ class Readium:
             summary, tree structure, content
         """
         self.branch = branch
-        
+
         # If it's a git URL, clone first
         if isinstance(path, str) and is_git_url(path):
             with tempfile.TemporaryDirectory() as temp_dir:

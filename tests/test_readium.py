@@ -2,9 +2,9 @@ import os
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
-from click.testing import CliRunner
 
 import pytest
+from click.testing import CliRunner
 from pypdf import PdfWriter
 
 from readium import ReadConfig, Readium, main
@@ -231,6 +231,7 @@ def test_full_directory_scan(sample_files):
     assert "Plain text file" in content
     assert "def test():" in content
 
+
 def test_real_repository_scan():
     """Integration test using the real Readium repository"""
     config = ReadConfig(
@@ -239,9 +240,9 @@ def test_real_repository_scan():
     )
     reader = Readium(config)
     url = "https://github.com/pablotoledo/Readium.git"
-    
+
     summary, tree, content = reader.read_docs(url)
-    
+
     # Verify basic content from main branch
     assert "README.md" in tree
     assert "# 📚 Readium" in content
@@ -254,16 +255,16 @@ def test_real_repository_specific_branch():
     reader = Readium(config)
     url = "https://github.com/pablotoledo/Readium.git"
     branch = "fix/issue-1"
-    
+
     summary, tree, content = reader.read_docs(url, branch=branch)
-    
+
     # Verify branch information appears in summary
     assert f"Git branch: {branch}" in summary
-    
+
     # Verify we can access basic content from the branch
     assert "README.md" in tree
     assert "pyproject.toml" in tree
-    
+
     # Verify content contains expected files
     assert "Documentation Structure:" in tree
     assert "# 📚 Readium" in content
@@ -273,17 +274,19 @@ def test_real_repository_branch_content_comparison():
     """Test to compare content between main and specific branch"""
     reader = Readium(ReadConfig(debug=True))
     url = "https://github.com/pablotoledo/Readium.git"
-    
+
     # Get content from main branch
     main_summary, main_tree, main_content = reader.read_docs(url)
-    
+
     # Get content from specific branch
-    branch_summary, branch_tree, branch_content = reader.read_docs(url, branch="fix/issue-1")
-    
+    branch_summary, branch_tree, branch_content = reader.read_docs(
+        url, branch="fix/issue-1"
+    )
+
     # Verify we can get content from both branches
     assert "README.md" in main_tree
     assert "README.md" in branch_tree
-    
+
     # Verify branch information only appears in branch summary
     assert "Git branch: fix/issue-1" in branch_summary
     assert "Git branch: " not in main_summary
@@ -293,12 +296,16 @@ def test_cli_with_real_repository():
     """Test CLI integration with real repository"""
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(main, [
-            "https://github.com/pablotoledo/Readium.git",
-            "-b", "fix/issue-1",
-            "--debug"
-        ])
-        
+        result = runner.invoke(
+            main,
+            [
+                "https://github.com/pablotoledo/Readium.git",
+                "-b",
+                "fix/issue-1",
+                "--debug",
+            ],
+        )
+
         # Verify successful execution
         assert result.exit_code == 0
         assert "Git branch: fix/issue-1" in result.output
