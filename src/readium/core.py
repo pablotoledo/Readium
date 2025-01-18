@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Union, overload
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from markitdown import FileConversionException, MarkItDown, UnsupportedFormatException
 
@@ -23,9 +23,26 @@ def is_git_url(url: str) -> bool:
     )
 
 
-def clone_repository(url: str, target_dir: str) -> None:
-    """Clone a git repository to the target directory"""
+def clone_repository(url: str, target_dir: str, branch: Optional[str] = None) -> None:
+    """Clone a git repository to the target directory
+
+    Parameters
+    ----------
+    url : str
+        Repository URL
+    target_dir : str
+        Target directory for cloning
+    branch : Optional[str]
+        Specific branch to clone (default: None, uses default branch)
+    """
     try:
+        # Base command
+        cmd = ["git", "clone", "--depth=1"]
+        
+        # Add branch specification if provided
+        if branch:
+            cmd.extend(["-b", branch])
+            
         # If the URL contains '@', it is likely to have a token
         if "@" in url:
             # Extract the token and reconstruct the URL
@@ -37,6 +54,8 @@ def clone_repository(url: str, target_dir: str) -> None:
             # Log for debugging (hiding the full token)
             token_preview = f"{token[:4]}...{token[-4:]}" if len(token) > 8 else "****"
             print(f"DEBUG: Attempting to clone with token: {token_preview}")
+            if branch:
+                print(f"DEBUG: Using branch: {branch}")
 
             # Use the token as a password with an empty username
             env = os.environ.copy()
@@ -44,18 +63,12 @@ def clone_repository(url: str, target_dir: str) -> None:
             env["GIT_USERNAME"] = ""
             env["GIT_PASSWORD"] = token
 
-            subprocess.run(
-                ["git", "clone", "--depth=1", repo_url, target_dir],
-                check=True,
-                capture_output=True,
-                env=env,
-            )
+            cmd.extend([repo_url, target_dir])
+            subprocess.run(cmd, check=True, capture_output=True, env=env)
         else:
-            subprocess.run(
-                ["git", "clone", "--depth=1", url, target_dir],
-                check=True,
-                capture_output=True,
-            )
+            cmd.extend([url, target_dir])
+            subprocess.run(cmd, check=True, capture_output=True)
+            
     except subprocess.CalledProcessError as e:
         error_msg = e.stderr.decode()
         # Hide the token in the error message if present
@@ -72,6 +85,7 @@ class Readium:
     def __init__(self, config: Optional[ReadConfig] = None):
         self.config = config or ReadConfig()
         self.markitdown = MarkItDown() if self.config.use_markitdown else None
+        self.branch: Optional[str] = None  # Add branch attribute
 
     def log_debug(self, msg: str) -> None:
         """Print debug messages if debug mode is enabled"""
@@ -152,7 +166,7 @@ class Readium:
         self.log_debug(f"Including {path} for processing")
         return True
 
-    def read_docs(self, path: Union[str, Path]) -> Tuple[str, str, str]:
+    def read_docs(self, path: Union[str, Path], branch: Optional[str] = None) -> Tuple[str, str, str]:
         """
         Read documentation from a directory or git repository
 
@@ -160,17 +174,21 @@ class Readium:
         ----------
         path : Union[str, Path]
             Local path or git URL
+        branch : Optional[str]
+            Specific branch to clone for git repositories (default: None)
 
         Returns
         -------
         Tuple[str, str, str]:
             summary, tree structure, content
         """
+        self.branch = branch
+        
         # If it's a git URL, clone first
         if isinstance(path, str) and is_git_url(path):
             with tempfile.TemporaryDirectory() as temp_dir:
                 try:
-                    clone_repository(path, temp_dir)
+                    clone_repository(path, temp_dir, branch)
                     return self._process_directory(Path(temp_dir), original_path=path)
                 except Exception as e:
                     raise ValueError(f"Error processing git repository: {str(e)}")
@@ -273,5 +291,7 @@ class Readium:
             summary += "Using MarkItDown for compatible files\n"
             if self.config.markitdown_extensions:
                 summary += f"MarkItDown extensions: {', '.join(self.config.markitdown_extensions)}\n"
+        if self.branch:
+            summary += f"Git branch: {self.branch}\n"
 
         return summary, tree, content

@@ -26,6 +26,9 @@ Examples:
     # Process a Git repository
     readium https://github.com/username/repository
 
+    # Process a specific branch of a Git repository
+    readium https://github.com/username/repository -b feature-branch
+
     # Save output to a file
     readium /path/to/directory -o output.md
 
@@ -33,8 +36,11 @@ Examples:
     readium /path/to/directory -t python
 """
 )
-@click.argument("path", type=str)  # Removed the 'help' argument
+@click.argument("path", type=str)
 @click.option("--target-dir", "-t", help="Target subdirectory to analyze")
+@click.option(
+    "--branch", "-b", help="Specific Git branch to clone (only for Git repositories)"
+)
 @click.option(
     "--max-size",
     "-s",
@@ -77,6 +83,7 @@ Examples:
 def main(
     path: str,
     target_dir: str,
+    branch: str,
     max_size: int,
     output: str,
     exclude_dir: tuple,
@@ -100,7 +107,7 @@ def main(
         )
 
         reader = Readium(config)
-        summary, tree, content = reader.read_docs(path)
+        summary, tree, content = reader.read_docs(path, branch=branch)
 
         if output:
             with open(output, "w", encoding="utf-8") as f:
