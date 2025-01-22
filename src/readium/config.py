@@ -140,6 +140,7 @@ DEFAULT_INCLUDE_EXTENSIONS = {
     ".conf",
     ".json",
     ".xml",
+    ".ipynb",
 }
 
 MARKITDOWN_EXTENSIONS = {
