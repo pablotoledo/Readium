@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
@@ -85,7 +86,8 @@ class Readium:
     def __init__(self, config: Optional[ReadConfig] = None):
         self.config = config or ReadConfig()
         self.markitdown = MarkItDown() if self.config.use_markitdown else None
-        self.branch: Optional[str] = None  # Add branch attribute
+        self.branch: Optional[str] = None
+        self.split_output_dir: Optional[str] = None
 
     def log_debug(self, msg: str) -> None:
         """Print debug messages if debug mode is enabled"""
@@ -241,6 +243,39 @@ class Readium:
             self.log_debug(f"Error processing file: {str(e)}")
             return None
 
+    def write_split_files(self, files: List[Dict[str, str]], base_path: Path) -> None:
+        """Write individual files for each processed document.
+
+        Args:
+            files: List of dictionaries containing file paths and contents
+            base_path: Base path for creating the output directory structure
+        """
+        if not self.split_output_dir:
+            return
+
+        output_dir = Path(self.split_output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        for file_info in files:
+            # Generate a unique identifier
+            file_uuid = str(uuid.uuid4())
+
+            # Create output file path
+            output_file = output_dir / f"{file_uuid}.txt"
+
+            # Prepare content with metadata header
+            content = (
+                f"Original Path: {file_info['path']}\n"
+                f"Base Directory: {base_path}\n"
+                f"UUID: {file_uuid}\n"
+                f"{'=' * 50}\n\n"
+                f"{file_info['content']}"
+            )
+
+            # Write the file
+            with open(output_file, "w", encoding="utf-8", errors="ignore") as f:
+                f.write(content)
+
     def _process_directory(
         self, path: Path, original_path: Optional[str] = None
     ) -> Tuple[str, str, str]:
@@ -267,6 +302,10 @@ class Readium:
                     result = self._process_file(file_path, relative_path)
                     if result:
                         files.append(result)
+
+        # Write split files if output directory is specified
+        if self.split_output_dir:
+            self.write_split_files(files, path)
 
         # Generate tree
         tree = "Documentation Structure:\n"
@@ -295,5 +334,7 @@ class Readium:
                 summary += f"MarkItDown extensions: {', '.join(self.config.markitdown_extensions)}\n"
         if self.branch:
             summary += f"Git branch: {self.branch}\n"
+        if self.split_output_dir:
+            summary += f"Split files output directory: {self.split_output_dir}\n"
 
         return summary, tree, content

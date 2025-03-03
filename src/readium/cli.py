@@ -34,6 +34,9 @@ Examples:
 
     # Process specific subdirectory
     readium /path/to/directory -t python
+
+    # Generate split files for fine-tuning
+    readium /path/to/directory --split-output ./fine-tuning-data
 """
 )
 @click.argument("path", type=str)
@@ -52,9 +55,12 @@ Examples:
     "--output",
     "-o",
     type=click.Path(),
-    help="""Output file path. If specified, the results will be saved to this file
-    instead of displaying in the terminal. For example:
-    readium input.md -o output.md""",
+    help="Output file path for combined results",
+)
+@click.option(
+    "--split-output",
+    type=click.Path(),
+    help="Directory path for split output files (each file gets its own UUID-named file)",
 )
 @click.option(
     "--exclude-dir", "-x", multiple=True, help="Additional directories to exclude"
@@ -86,6 +92,7 @@ def main(
     branch: str,
     max_size: int,
     output: str,
+    split_output: str,
     exclude_dir: tuple,
     include_ext: tuple,
     use_markitdown: bool,
@@ -107,6 +114,9 @@ def main(
         )
 
         reader = Readium(config)
+        if split_output:
+            reader.split_output_dir = split_output
+
         summary, tree, content = reader.read_docs(path, branch=branch)
 
         if output:
