@@ -8,7 +8,7 @@ def test_help_includes_output_option():
     result = runner.invoke(main, ["--help"])
     assert "-o, --output" in result.output
     assert "Output file path" in result.output
-    assert "readium input.md -o output.md" in result.output
+    assert "readium /path/to/directory -o output.md" in result.output  # Updated line
 
 
 def test_help_includes_examples():
