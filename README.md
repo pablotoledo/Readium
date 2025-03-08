@@ -163,4 +163,65 @@ config = ReadConfig(
 )
 ```
 
-[Rest of the README content remains unchanged...]
+## 📝 Split Output for Fine-tuning
+
+When using the `--split-output` option or setting `split_output_dir` in the Python API, Readium will generate individual files for each processed document. This is particularly useful for creating datasets for fine-tuning language models.
+
+Each output file:
+- Has a unique UUID-based name (e.g., `123e4567-e89b-12d3-a456-426614174000.txt`)
+- Contains metadata headers with:
+  - Original file path
+  - Base directory
+  - UUID
+- Includes the complete original content
+- Is saved with UTF-8 encoding
+
+Example output file structure:
+```
+Original Path: src/documentation/guide.md
+Base Directory: /path/to/repository
+UUID: 123e4567-e89b-12d3-a456-426614174000
+==================================================
+
+[Original file content follows here]
+```
+
+This format makes it easy to:
+- Track the origin of each piece of content
+- Maintain data provenance
+- Process files individually for fine-tuning
+- Filter and organize training data
+- Maintain traceability in machine learning pipelines
+
+### Usage Examples
+
+Command Line:
+```bash
+# Basic split output
+readium /path/to/repository --split-output ./training-data/
+
+# Combined with other features
+readium /path/to/repository \
+    --split-output ./training-data/ \
+    --target-dir docs \
+    --use-markitdown \
+    --debug
+```
+
+Python API:
+```python
+from readium import Readium, ReadConfig
+
+# Configure with all relevant options
+config = ReadConfig(
+    target_dir='docs',
+    use_markitdown=True,
+    debug=True
+)
+
+reader = Readium(config)
+reader.split_output_dir = "./training-data/"
+
+# Process and generate split files
+summary, tree, content = reader.read_docs('/path/to/repository')
+```
