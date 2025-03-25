@@ -8,7 +8,6 @@
         }
     },
 
-    // Configure tool-specific properties
     "customizations": {
         "vscode": {
             "settings": {
@@ -46,10 +45,8 @@
         }
     },
 
-    // Install project dependencies and dev tools
     "postCreateCommand": "pip install --user -e '.[dev]' && pip install hatch pre-commit pytest mypy black isort pytest-mock",
 
-    // Comment out to connect as root instead
     "remoteUser": "vscode",
 
     "features": {

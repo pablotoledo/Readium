@@ -28,6 +28,7 @@ black = ">=24.10.0,<25.0.0"
 isort = ">=5.12.0,<6.0.0"
 markitdown = ">=0.0.1a3,<0.0.2"
 pypdf = ">=3.0.1,<4.0.0"
+trafilatura = ">=1.6.0,<2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

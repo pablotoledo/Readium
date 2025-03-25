@@ -1,15 +1,17 @@
 from pathlib import Path
+from typing import Literal, cast  # Añadimos cast para el tipado
 
 import click
 from rich.console import Console
 from rich.table import Table
 
+from .config import URL_MODES  # Importamos URL_MODES para el tipado
 from .config import (
     DEFAULT_EXCLUDE_DIRS,
     DEFAULT_INCLUDE_EXTENSIONS,
     MARKITDOWN_EXTENSIONS,
 )
-from .core import ReadConfig, Readium
+from .core import ReadConfig, Readium, is_url
 from .utils.error_handling import print_error
 
 console = Console()
@@ -17,7 +19,7 @@ console = Console()
 
 @click.command(
     help="""
-Read and analyze documentation from directories or repositories.
+Read and analyze documentation from directories, repositories, or URLs.
 
 Examples:
     # Process a local directory
@@ -26,21 +28,23 @@ Examples:
     # Process a Git repository
     readium https://github.com/username/repository
 
-    # Process a specific branch of a Git repository
-    readium https://github.com/username/repository -b feature-branch
+    # Process a webpage and convert to Markdown
+    readium https://example.com/docs
+
+    # Process a webpage with custom output
+    readium https://example.com/docs -o docs.md
 
     # Save output to a file
     readium /path/to/directory -o output.md
 
-    # Process specific subdirectory
-    readium /path/to/directory -t python
-
-    # Generate split files for fine-tuning
-    readium /path/to/directory --split-output ./fine-tuning-data
+    # Generate split files from a webpage
+    readium https://example.com/docs --split-output ./markdown-files/
 """
 )
 @click.argument("path", type=str)
-@click.option("--target-dir", "-t", help="Target subdirectory to analyze")
+@click.option(
+    "--target-dir", "-t", help="Target subdirectory to analyze (for directories)"
+)
 @click.option(
     "--branch", "-b", help="Specific Git branch to clone (only for Git repositories)"
 )
@@ -52,10 +56,7 @@ Examples:
     help="Maximum file size in bytes (default: 5MB)",
 )
 @click.option(
-    "--output",
-    "-o",
-    type=click.Path(),
-    help="Output file path for combined results",
+    "--output", "-o", type=click.Path(), help="Output file path for combined results"
 )
 @click.option(
     "--split-output",
@@ -63,22 +64,22 @@ Examples:
     help="Directory path for split output files (each file gets its own UUID-named file)",
 )
 @click.option(
-    "--exclude-dir", "-x", multiple=True, help="Additional directories to exclude"
-)
-@click.option(
-    "--include-ext", "-i", multiple=True, help="Additional extensions to include"
-)
-@click.option(
-    "--use-markitdown/--no-markitdown",
-    "-m/-M",
-    default=False,
-    help="Use MarkItDown for compatible file formats",
-)
-@click.option(
-    "--markitdown-ext",
-    "-k",
+    "--exclude-dir",
+    "-x",
     multiple=True,
-    help="Specific extensions to process with MarkItDown (default: all supported)",
+    help="Additional directories to exclude (for directories)",
+)
+@click.option(
+    "--include-ext",
+    "-i",
+    multiple=True,
+    help="Additional extensions to include (for directories)",
+)
+@click.option(
+    "--url-mode",
+    type=click.Choice(["full", "clean"]),
+    default="clean",
+    help="URL processing mode: 'full' preserves all content, 'clean' extracts main content only (default: clean)",
 )
 @click.option(
     "--debug/--no-debug",
@@ -95,21 +96,25 @@ def main(
     split_output: str,
     exclude_dir: tuple,
     include_ext: tuple,
-    use_markitdown: bool,
-    markitdown_ext: tuple,
+    url_mode: str,
     debug: bool,
 ):
-    """Read and analyze documentation from a directory or repository"""
+    """Read and analyze documentation from a directory, repository, or URL"""
     try:
+        # Validamos que url_mode sea uno de los valores permitidos
+        if url_mode not in ("full", "clean"):
+            url_mode = "clean"  # Valor por defecto si no es válido
+
         config = ReadConfig(
             max_file_size=max_size,
             exclude_dirs=DEFAULT_EXCLUDE_DIRS | set(exclude_dir),
             include_extensions=DEFAULT_INCLUDE_EXTENSIONS | set(include_ext),
             target_dir=target_dir,
-            use_markitdown=use_markitdown,
-            markitdown_extensions=(
-                set(markitdown_ext) if markitdown_ext else MARKITDOWN_EXTENSIONS
-            ),
+            url_mode=cast(
+                URL_MODES, url_mode
+            ),  # Usamos cast para que mypy entienda el tipo
+            use_markitdown=False,
+            markitdown_extensions=set(),
             debug=debug,
         )
 
