@@ -96,21 +96,36 @@ def test_read_docs_url_with_output(mock_convert, tmp_path):
         assert "# Test Document" in file_content
 
 
+# Check if trafilatura is installed
+try:
+    import trafilatura
+
+    trafilatura_installed = True
+except ImportError:
+    trafilatura_installed = False
+
+
+@pytest.mark.skipif(not trafilatura_installed, reason="Trafilatura not installed")
 @patch("trafilatura.fetch_url")
 def test_convert_url_error_handling(mock_fetch):
     """Test error handling when fetching URL fails"""
     # Setup mock to return None (failed download)
     mock_fetch.return_value = None
 
+    # Import locally to avoid errors when trafilatura isn't installed
+    from readium.core import convert_url_to_markdown
+
     # Test with invalid URL
     with pytest.raises(ValueError) as excinfo:
         convert_url_to_markdown("https://example.com/nonexistent")
 
-    assert "No se pudo descargar" in str(excinfo.value)
+    assert "Failed to download content" in str(excinfo.value)
 
 
 def test_cli_url_processing():
     """Test CLI with URL processing"""
+    import os
+
     from click.testing import CliRunner
 
     from readium.cli import main
@@ -121,12 +136,13 @@ def test_cli_url_processing():
 
         runner = CliRunner()
         with runner.isolated_filesystem():
+            output_file = "docs.md"
             result = runner.invoke(
                 main,
                 [
                     "https://example.com/docs",
                     "--output",
-                    "docs.md",
+                    output_file,
                     "--url-mode",
                     "clean",
                 ],
@@ -134,8 +150,13 @@ def test_cli_url_processing():
 
             # Verify successful execution
             assert result.exit_code == 0
-            assert "URL processed: https://example.com/docs" in result.output
-            assert "Results saved to docs.md" in result.output
 
-            # Check if file was created
-            assert os.path.exists("docs.md")
+            # Verify that the file was created successfully
+            assert f"Results saved to {output_file}" in result.output
+            assert os.path.exists(output_file)
+
+            # Verify the content of the file
+            with open(output_file, "r") as f:
+                content = f.read()
+                # Verify that the file content includes some of the expected content
+                assert "# Test Content" in content

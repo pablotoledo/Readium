@@ -20,36 +20,79 @@ from .config import (
 
 def is_git_url(url: str) -> bool:
     """Check if the given string is a git URL"""
-    return url.startswith(("http://", "https://")) and (
-        url.endswith(".git") or "github.com" in url or "gitlab.com" in url
-    )
+    if not url.startswith(("http://", "https://")):
+        return False
+
+    # Detect Git-specific URLs
+    if url.endswith(".git"):
+        return True
+
+    # Detect GitHub/GitLab style paths
+    if "github.com/" in url or "gitlab.com/" in url:
+        parts = url.split("/")
+        # Basic user/repo format (at least 4 parts)
+        if len(parts) >= 4:
+            return True
+
+    return False
 
 
 def is_url(url: str) -> bool:
-    """Check if a string is a valid URL"""
+    """Check if a string is a valid URL (but not a git URL)"""
     try:
         result = urllib.parse.urlparse(url)
-        return all([result.scheme, result.netloc]) and result.scheme in (
+        # It is an HTTP/HTTPS URL but NOT a git URL
+        is_valid_url = all([result.scheme, result.netloc]) and result.scheme in (
             "http",
             "https",
         )
+        return is_valid_url and not is_git_url(url)
     except ValueError:
         return False
 
 
-def convert_url_to_markdown(url: str) -> Tuple[str, str]:
+def convert_url_to_markdown(
+    url: str, config: Optional[ReadConfig] = None
+) -> Tuple[str, str]:
     """
     Convert a URL to Markdown using trafilatura
+
+    Parameters
+    ----------
+    url : str
+        URL to convert.
+    config : Optional[ReadConfig]
+        Configuration for processing, defaults to None
+
+    Returns
+    -------
+    Tuple[str, str]:
+        Extracted title, content in Markdown format.
     """
-    import trafilatura
-    from trafilatura.settings import use_config
+    if config is None:
+        config = ReadConfig()
 
     try:
-        # Configure trafilatura for Markdown output
-        config = use_config()
-        config.set("DEFAULT", "output_format", "markdown")
+        # Attempt to import trafilatura here to handle import errors
+        import trafilatura
+        from trafilatura.settings import use_config
 
-        # Download and extract the content
+        # Configure trafilatura for Markdown output
+        trafilatura_config = use_config()
+        trafilatura_config.set("DEFAULT", "output_format", "markdown")
+
+        # Adjust extraction settings based on URL mode
+        if config.url_mode == "full":
+            # Disable aggressive filtering
+            trafilatura_config.set("DEFAULT", "extraction_timeout", "30")
+            trafilatura_config.set("DEFAULT", "min_extracted_size", "10")
+            trafilatura_config.set(
+                "EXTRACTION",
+                "list_tags",
+                "p, blockquote, q, dl, ul, ol, h1, h2, h3, h4, h5, h6, div, section, article",
+            )
+
+        # Download and extract content
         downloaded = trafilatura.fetch_url(url)
         if not downloaded:
             raise ValueError(f"Failed to download content from {url}")
@@ -62,10 +105,11 @@ def convert_url_to_markdown(url: str) -> Tuple[str, str]:
         markdown = trafilatura.extract(
             downloaded,
             output_format="markdown",
-            include_tables=True,
-            include_images=True,
-            include_links=True,
-            config=config,
+            include_tables=config.include_tables,
+            include_images=config.include_images,
+            include_links=config.include_links,
+            include_comments=config.include_comments,
+            config=trafilatura_config,
         )
 
         if not markdown:
@@ -73,6 +117,16 @@ def convert_url_to_markdown(url: str) -> Tuple[str, str]:
 
         return title, markdown
 
+    except ImportError:
+        # If trafilatura is not installed, return an error message
+        print(
+            "Warning: Trafilatura is not installed. URL to Markdown conversion is disabled."
+        )
+        # Return generic error content
+        return (
+            "Error",
+            f"# Error\n\nUnable to convert URL: {url}. The required package 'trafilatura' is not installed.",
+        )
     except Exception as e:
         raise ValueError(f"Error converting URL to Markdown: {str(e)}")
 
@@ -250,12 +304,12 @@ class Readium:
                 except Exception as e:
                     raise ValueError(f"Error processing git repository: {str(e)}")
         # If it's a regular URL, process it
-        elif isinstance(path, str) and is_url(path) and not is_git_url(path):
+        elif isinstance(path, str) and is_url(path):
             try:
                 self.log_debug(f"URL detected: {path}")
 
                 # Extract title and Markdown content
-                title, markdown_content = convert_url_to_markdown(path)
+                title, markdown_content = convert_url_to_markdown(path, self.config)
 
                 # Generate file name from the URL
                 file_name = (
