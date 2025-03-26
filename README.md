@@ -1,6 +1,6 @@
 # 📚 Readium
 
-A powerful Python tool for extracting, analyzing, and converting documentation from repositories and directories into accessible formats.
+A powerful Python tool for extracting, analyzing, and converting documentation from repositories, directories, and URLs into accessible formats.
 
 <p align="center">
   <img src="logo.webp" alt="Readium" width="80%">
@@ -12,6 +12,10 @@ A powerful Python tool for extracting, analyzing, and converting documentation f
   - Support for private repositories using tokens
   - Branch selection for Git repositories
   - Secure token handling and masking
+- 🌐 **Process webpages and URLs** to convert directly to Markdown
+  - Extract main content from documentation websites
+  - Convert HTML to well-formatted Markdown
+  - Support for tables, links, and images in converted content
 - 🔄 **Convert multiple document formats** to Markdown using MarkItDown integration
 - 🎯 **Target specific subdirectories** for focused analysis
 - ⚡ **Process a wide range of file types**:
@@ -19,6 +23,7 @@ A powerful Python tool for extracting, analyzing, and converting documentation f
   - Code files (`.py`, `.js`, `.java`, etc.)
   - Configuration files (`.yml`, `.toml`, `.json`, etc.)
   - Office documents with MarkItDown (`.pdf`, `.docx`, `.xlsx`, `.pptx`)
+  - Webpages and HTML via direct URL processing
 - 🎛️ **Highly configurable**:
   - Customizable file size limits
   - Flexible file extension filtering
@@ -59,6 +64,9 @@ readium https://github.com/username/repository -b feature-branch
 # Process a private Git repository with token
 readium https://token@github.com/username/repository
 
+# Process a webpage and convert to Markdown
+readium https://example.com/documentation
+
 # Save output to a file
 readium /path/to/directory -o output.md
 
@@ -85,6 +93,12 @@ readium /path/to/directory --debug
 
 # Generate split files for fine-tuning
 readium /path/to/directory --split-output ./training-data/
+
+# Process URL with content preservation mode
+readium https://example.com/docs --url-mode full
+
+# Process URL with main content extraction (default)
+readium https://example.com/docs --url-mode clean
 ```
 
 ### Python API
@@ -118,11 +132,67 @@ summary, tree, content = reader.read_docs(
 # Process private Git repository with token
 summary, tree, content = reader.read_docs('https://token@github.com/username/repo')
 
+# Process a webpage and convert to Markdown
+summary, tree, content = reader.read_docs('https://example.com/documentation')
+
 # Access results
 print("Summary:", summary)
 print("\nFile Tree:", tree)
 print("\nContent:", content)
 ```
+
+## 🌐 URL to Markdown
+
+Readium can process web pages and convert them directly to Markdown:
+
+```bash
+# Process a webpage
+readium https://example.com/documentation
+
+# Save the output to a file
+readium https://example.com/documentation -o docs.md
+
+# Process URL preserving more content
+readium https://example.com/documentation --url-mode full
+
+# Process URL extracting only main content (default)
+readium https://example.com/documentation --url-mode clean
+```
+
+### URL Conversion Configuration
+
+The URL to Markdown conversion can be configured with several options:
+
+- `--url-mode`: Processing mode (`clean` or `full`)
+  - `clean` (default): Extracts only the main content, ignoring menus, ads, etc.
+  - `full`: Attempts to preserve most of the page content
+
+### Python API for URLs
+
+```python
+from readium import Readium, ReadConfig
+
+# Configure with URL options
+config = ReadConfig(
+    url_mode="clean",  # 'clean' or 'full'
+    include_tables=True,
+    include_images=True,
+    include_links=True,
+    include_comments=False,
+    debug=True
+)
+
+reader = Readium(config)
+
+# Process a URL
+summary, tree, content = reader.read_docs('https://example.com/documentation')
+
+# Save the content
+with open('documentation.md', 'w', encoding='utf-8') as f:
+    f.write(content)
+```
+
+Readium uses [trafilatura](https://github.com/adbar/trafilatura) for web content extraction and conversion, which is especially effective for extracting the main content from technical documentation, tutorials, and other web resources.
 
 ## 🔧 Configuration
 
@@ -150,6 +220,15 @@ config = ReadConfig(
 
     # Specify extensions for MarkItDown processing
     markitdown_extensions={'.pdf', '.docx', '.xlsx'},
+
+    # URL processing mode: 'clean' or 'full'
+    url_mode='clean',
+
+    # URL content options
+    include_tables=True,
+    include_images=True,
+    include_links=True,
+    include_comments=False,
 
     # Enable debug mode
     debug=False
@@ -268,6 +347,11 @@ readium /path/to/repository \
     --target-dir docs \
     --use-markitdown \
     --debug
+
+# Process a URL and create split files
+readium https://example.com/docs \
+    --split-output ./training-data/ \
+    --url-mode clean
 ```
 
 Python API:
@@ -286,6 +370,9 @@ reader.split_output_dir = "./training-data/"
 
 # Process and generate split files
 summary, tree, content = reader.read_docs('/path/to/repository')
+
+# Process a URL and generate split files
+summary, tree, content = reader.read_docs('https://example.com/docs')
 ```
 
 ## 🛠️ Development
@@ -340,5 +427,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🙏 Acknowledgments
 
 - Microsoft and MarkItDown for their powerful document conversion tool
+- Trafilatura for excellent web content extraction capabilities
 - Rich library for beautiful console output
 - Click for the powerful CLI interface

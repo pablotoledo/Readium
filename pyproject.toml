@@ -1,13 +1,13 @@
 [project]
 name = "readium"
-version = "0.2.0"
-description = "A tool to extract and analyze documentation from repositories and directories"
+version = "0.3.0"
+description = "A tool to extract and analyze documentation from repositories, directories, and URLs"
 authors = [
     {name = "Pablo Toledo", email = "pablotoledo@users.noreply.github.com"}
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<4.0"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -20,14 +20,16 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Documentation",
 ]
+
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.10,<4.0"  # Actualizado aquí también
 click = ">=8.1.8,<9.0.0"
 rich = ">=13.9.4,<14.0.0"
 black = ">=24.10.0,<25.0.0"
 isort = ">=5.12.0,<6.0.0"
 markitdown = ">=0.0.1a3,<0.0.2"
 pypdf = ">=3.0.1,<4.0.0"
+trafilatura = ">=1.6.0,<2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
@@ -49,7 +51,6 @@ readium = "readium.cli:main"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
 
 [tool.isort]
 profile = "black"

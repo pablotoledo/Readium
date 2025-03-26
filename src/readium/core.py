@@ -1,6 +1,7 @@
 import os
 import subprocess
 import tempfile
+import urllib.parse
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,9 +20,115 @@ from .config import (
 
 def is_git_url(url: str) -> bool:
     """Check if the given string is a git URL"""
-    return url.startswith(("http://", "https://")) and (
-        url.endswith(".git") or "github.com" in url or "gitlab.com" in url
-    )
+    if not url.startswith(("http://", "https://")):
+        return False
+
+    # Detect Git-specific URLs
+    if url.endswith(".git"):
+        return True
+
+    # Detect GitHub/GitLab style paths
+    if "github.com/" in url or "gitlab.com/" in url:
+        parts = url.split("/")
+        # Basic user/repo format (at least 4 parts)
+        if len(parts) >= 4:
+            return True
+
+    return False
+
+
+def is_url(url: str) -> bool:
+    """Check if a string is a valid URL (but not a git URL)"""
+    try:
+        result = urllib.parse.urlparse(url)
+        # It is an HTTP/HTTPS URL but NOT a git URL
+        is_valid_url = all([result.scheme, result.netloc]) and result.scheme in (
+            "http",
+            "https",
+        )
+        return is_valid_url and not is_git_url(url)
+    except ValueError:
+        return False
+
+
+def convert_url_to_markdown(
+    url: str, config: Optional[ReadConfig] = None
+) -> Tuple[str, str]:
+    """
+    Convert a URL to Markdown using trafilatura
+
+    Parameters
+    ----------
+    url : str
+        URL to convert.
+    config : Optional[ReadConfig]
+        Configuration for processing, defaults to None
+
+    Returns
+    -------
+    Tuple[str, str]:
+        Extracted title, content in Markdown format.
+    """
+    if config is None:
+        config = ReadConfig()
+
+    try:
+        # Attempt to import trafilatura here to handle import errors
+        import trafilatura
+        from trafilatura.settings import use_config
+
+        # Configure trafilatura for Markdown output
+        trafilatura_config = use_config()
+        trafilatura_config.set("DEFAULT", "output_format", "markdown")
+
+        # Adjust extraction settings based on URL mode
+        if config.url_mode == "full":
+            # Disable aggressive filtering
+            trafilatura_config.set("DEFAULT", "extraction_timeout", "30")
+            trafilatura_config.set("DEFAULT", "min_extracted_size", "10")
+            trafilatura_config.set(
+                "EXTRACTION",
+                "list_tags",
+                "p, blockquote, q, dl, ul, ol, h1, h2, h3, h4, h5, h6, div, section, article",
+            )
+
+        # Download and extract content
+        downloaded = trafilatura.fetch_url(url)
+        if not downloaded:
+            raise ValueError(f"Failed to download content from {url}")
+
+        # Extract metadata and content
+        metadata = trafilatura.extract_metadata(downloaded)
+        title = metadata.title if metadata and metadata.title else "Untitled"
+
+        # Extract content as Markdown
+        markdown = trafilatura.extract(
+            downloaded,
+            output_format="markdown",
+            include_tables=config.include_tables,
+            include_images=config.include_images,
+            include_links=config.include_links,
+            include_comments=config.include_comments,
+            config=trafilatura_config,
+        )
+
+        if not markdown:
+            raise ValueError(f"Failed to extract content from {url}")
+
+        return title, markdown
+
+    except ImportError:
+        # If trafilatura is not installed, return an error message
+        print(
+            "Warning: Trafilatura is not installed. URL to Markdown conversion is disabled."
+        )
+        # Return generic error content
+        return (
+            "Error",
+            f"# Error\n\nUnable to convert URL: {url}. The required package 'trafilatura' is not installed.",
+        )
+    except Exception as e:
+        raise ValueError(f"Error converting URL to Markdown: {str(e)}")
 
 
 def clone_repository(url: str, target_dir: str, branch: Optional[str] = None) -> None:
@@ -172,12 +279,12 @@ class Readium:
         self, path: Union[str, Path], branch: Optional[str] = None
     ) -> Tuple[str, str, str]:
         """
-        Read documentation from a directory or git repository
+        Read documentation from a directory, git repository, or URL
 
         Parameters
         ----------
         path : Union[str, Path]
-            Local path or git URL
+            Local path, git URL, or web URL
         branch : Optional[str]
             Specific branch to clone for git repositories (default: None)
 
@@ -196,6 +303,57 @@ class Readium:
                     return self._process_directory(Path(temp_dir), original_path=path)
                 except Exception as e:
                     raise ValueError(f"Error processing git repository: {str(e)}")
+        # If it's a regular URL, process it
+        elif isinstance(path, str) and is_url(path):
+            try:
+                self.log_debug(f"URL detected: {path}")
+
+                # Extract title and Markdown content
+                title, markdown_content = convert_url_to_markdown(path, self.config)
+
+                # Generate file name from the URL
+                file_name = (
+                    os.path.basename(urllib.parse.urlparse(path).path) or "index.md"
+                )
+                if not file_name.endswith(".md"):
+                    file_name += ".md"
+
+                # Generate result
+                file_info = [
+                    {"path": file_name, "content": markdown_content, "title": title}
+                ]
+
+                # Write split files if output directory is specified
+                if self.split_output_dir:
+                    self.write_split_files(
+                        file_info, Path(urllib.parse.urlparse(path).netloc)
+                    )
+
+                # Generate tree structure
+                tree = "Documentation Structure:\n"
+                tree += f"└── {file_name} (from {path})\n"
+
+                # Generate content
+                content = f"================================================\n"
+                content += f"File: {file_name}\n"
+                content += f"Source: {path}\n"
+                content += f"Title: {title}\n"
+                content += f"================================================\n\n"
+                content += markdown_content
+
+                # Generate summary
+                summary = f"URL processed: {path}\n"
+                summary += f"Title: {title}\n"
+                summary += f"Output file: {file_name}\n"
+                if self.split_output_dir:
+                    summary += (
+                        f"Split files output directory: {self.split_output_dir}\n"
+                    )
+
+                return summary, tree, content
+
+            except Exception as e:
+                raise ValueError(f"Error processing URL: {str(e)}")
         else:
             path_obj = Path(path)
             if not path_obj.exists():
