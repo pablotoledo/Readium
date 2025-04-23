@@ -39,6 +39,9 @@ Examples:
 
     # Generate split files from a webpage
     readium https://example.com/docs --split-output ./markdown-files/
+
+    # Exclude specific file extensions
+    readium /path/to/directory --exclude-ext .json --exclude-ext .yml
 """
 )
 @click.argument("path", type=str)
@@ -82,6 +85,12 @@ Examples:
     help="URL processing mode: 'full' preserves all content, 'clean' extracts main content only (default: clean)",
 )
 @click.option(
+    "--exclude-ext",
+    "-e",
+    multiple=True,
+    help="File extensions to exclude from processing (can be specified multiple times, e.g. --exclude-ext .json --exclude-ext .yml)",
+)
+@click.option(
     "--debug/--no-debug",
     "-d/-D",
     default=False,
@@ -96,6 +105,7 @@ def main(
     split_output: str,
     exclude_dir: tuple,
     include_ext: tuple,
+    exclude_ext: tuple,
     url_mode: str,
     debug: bool,
 ):
@@ -109,6 +119,7 @@ def main(
             max_file_size=max_size,
             exclude_dirs=DEFAULT_EXCLUDE_DIRS | set(exclude_dir),
             include_extensions=DEFAULT_INCLUDE_EXTENSIONS | set(include_ext),
+            exclude_extensions=set(exclude_ext),
             target_dir=target_dir,
             url_mode=cast(
                 URL_MODES, url_mode
