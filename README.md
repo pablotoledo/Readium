@@ -18,6 +18,35 @@ A powerful Python tool for extracting, analyzing, and converting documentation f
   - Support for tables, links, and images in converted content
 - 🔄 **Convert multiple document formats** to Markdown using MarkItDown integration
 - 🎯 **Target specific subdirectories** for focused analysis
+
+## 🔄 MarkItDown Integration
+
+Readium can use [MarkItDown](https://github.com/microsoft/markitdown) to convert a wide range of document formats directly to Markdown, including:
+
+- PDF (`.pdf`)
+- Word (`.docx`)
+- Excel (`.xlsx`, `.xls`)
+- PowerPoint (`.pptx`)
+- HTML (`.html`, `.htm`)
+- Outlook messages (`.msg`)
+
+To enable this feature, use the `--use-markitdown` option in the CLI or set `use_markitdown=True` in the Python API. MarkItDown will be used automatically for all compatible files.
+
+**Note:** The `markitdown` Python package must be installed. It is included as a dependency, but you can install it manually with:
+```bash
+pip install markitdown
+```
+
+**Example CLI usage:**
+```bash
+readium /path/to/directory --use-markitdown
+```
+
+When enabled, the summary will indicate:
+```
+Using MarkItDown for compatible files
+MarkItDown extensions: .pdf, .docx, .xlsx, .pptx, .html, .msg
+```
 - ⚡ **Process a wide range of file types**:
   - Documentation files (`.md`, `.mdx`, `.rst`, `.txt`)
   - Code files (`.py`, `.js`, `.java`, etc.)
@@ -70,7 +99,7 @@ readium https://example.com/documentation
 # Save output to a file
 readium /path/to/directory -o output.md
 
-# Enable MarkItDown integration
+# Enable MarkItDown integration (for PDF, DOCX, etc.)
 readium /path/to/directory --use-markitdown
 
 # Focus on specific subdirectory
@@ -82,11 +111,16 @@ readium /path/to/directory --target-dir docs/
 # Customize file size limit (e.g., 10MB)
 readium /path/to/directory --max-size 10485760
 
-# Add custom directories to exclude
+# Add custom directories to exclude (can be specified multiple times)
 readium /path/to/directory --exclude-dir build --exclude-dir temp
+
+# Or using the short form -x (can be repeated)
+readium /path/to/directory -x build -x temp
 
 # Include additional file extensions
 readium /path/to/directory --include-ext .cfg --include-ext .conf
+
+# The CLI will print the final list of excluded directories at runtime.
 
 # Exclude specific file extensions (can be specified multiple times)
 readium /path/to/directory --exclude-ext .json --exclude-ext .yml
@@ -103,6 +137,10 @@ readium https://example.com/docs --url-mode full
 # Process URL with main content extraction (default)
 readium https://example.com/docs --url-mode clean
 ```
+
+**Note:**
+- Do not use empty values with `-x`/`--exclude-dir`. Each value must be a valid directory name.
+- The CLI will display the final list of excluded directories before processing.
 
 ### Python API
 

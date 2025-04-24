@@ -42,6 +42,11 @@ Examples:
 
     # Exclude specific file extensions
     readium /path/to/directory --exclude-ext .json --exclude-ext .yml
+
+    # Exclude multiple directories (using -x multiple times)
+    readium /path/to/directory -x dir1 -x dir2
+
+Note: Do not use empty values with -x/--exclude-dir. Each value must be a valid directory name.
 """
 )
 @click.argument("path", type=str)
@@ -96,6 +101,11 @@ Examples:
     default=False,
     help="Enable debug mode",
 )
+@click.option(
+    "--use-markitdown/--no-markitdown",
+    default=False,
+    help="Use MarkItDown to convert compatible document formats (PDF, DOCX, etc.)",
+)
 def main(
     path: str,
     target_dir: str,
@@ -108,24 +118,41 @@ def main(
     exclude_ext: tuple,
     url_mode: str,
     debug: bool,
+    use_markitdown: bool,
 ):
     """Read and analyze documentation from a directory, repository, or URL"""
     try:
+        # Validación: no permitir valores vacíos en --exclude-dir / -x
+        for d in exclude_dir:
+            if not d or d.strip() == "":
+                raise click.UsageError(
+                    "Empty value detected for --exclude-dir/-x. Please provide a valid directory name."
+                )
+
         # Validamos que url_mode sea uno de los valores permitidos
         if url_mode not in ("full", "clean"):
             url_mode = "clean"  # Valor por defecto si no es válido
 
+        # Mostrar al usuario la lista final de directorios excluidos
+        final_exclude_dirs = DEFAULT_EXCLUDE_DIRS | set(exclude_dir)
+        if exclude_dir:
+            console.print(
+                f"[yellow]Excluding directories:[/yellow] {', '.join(sorted(final_exclude_dirs))}"
+            )
+
         config = ReadConfig(
             max_file_size=max_size,
-            exclude_dirs=DEFAULT_EXCLUDE_DIRS | set(exclude_dir),
+            exclude_dirs=final_exclude_dirs,
             include_extensions=DEFAULT_INCLUDE_EXTENSIONS | set(include_ext),
             exclude_extensions=set(exclude_ext),
             target_dir=target_dir,
             url_mode=cast(
                 URL_MODES, url_mode
             ),  # Usamos cast para que mypy entienda el tipo
-            use_markitdown=False,
-            markitdown_extensions=set(),
+            use_markitdown=use_markitdown,
+            markitdown_extensions=MARKITDOWN_EXTENSIONS.copy()
+            if use_markitdown
+            else set(),
             debug=debug,
         )
 

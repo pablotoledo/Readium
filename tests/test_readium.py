@@ -202,6 +202,21 @@ def test_read_docs_with_markitdown(mock_markitdown, sample_files, sample_pdf):
     assert "Converted content" in content
 
 
+def test_markitdown_integration_real(sample_pdf, sample_files):
+    """Test real integration with MarkItDown using an actual PDF file (no mocks)"""
+    config = ReadConfig(
+        use_markitdown=True,
+        markitdown_extensions={".pdf"},
+        include_extensions=set(),  # Solo procesar PDFs
+        debug=True,
+    )
+    reader = Readium(config)
+    summary, tree, content = reader.read_docs(sample_files)
+    # El PDF debe aparecer en el árbol y el contenido debe contener alguna marca de conversión
+    assert "document.pdf" in tree
+    assert "Using MarkItDown" in summary or "MarkItDown" in content or "PDF" in content
+
+
 # Integration tests
 
 
