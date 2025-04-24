@@ -160,7 +160,13 @@ URL_MODES = Literal["full", "clean"]
 
 @dataclass
 class ReadConfig:
-    """Configuration for document reading"""
+    """Configuration for document reading
+
+    Attributes
+    ----------
+    exclude_extensions : Set[str]
+        File extensions to exclude from processing (takes precedence over include_extensions).
+    """
 
     max_file_size: int = 5 * 1024 * 1024  # 5MB default
     exclude_dirs: Set[str] = field(default_factory=lambda: DEFAULT_EXCLUDE_DIRS.copy())
@@ -170,6 +176,7 @@ class ReadConfig:
     include_extensions: Set[str] = field(
         default_factory=lambda: DEFAULT_INCLUDE_EXTENSIONS.copy()
     )
+    exclude_extensions: Set[str] = field(default_factory=set)
     target_dir: Optional[str] = None
     use_markitdown: bool = False
     markitdown_extensions: Optional[Set[str]] = field(

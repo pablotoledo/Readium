@@ -88,6 +88,9 @@ readium /path/to/directory --exclude-dir build --exclude-dir temp
 # Include additional file extensions
 readium /path/to/directory --include-ext .cfg --include-ext .conf
 
+# Exclude specific file extensions (can be specified multiple times)
+readium /path/to/directory --exclude-ext .json --exclude-ext .yml
+
 # Enable debug mode for detailed processing information
 readium /path/to/directory --debug
 
@@ -212,6 +215,9 @@ config = ReadConfig(
     # File extensions to include (extends default set)
     include_extensions={'.custom', '.special'},
 
+    # File extensions to exclude (takes precedence over include_extensions)
+    exclude_extensions={'.json', '.yml'},
+
     # Target specific subdirectory
     target_dir='docs',
 
@@ -268,6 +274,8 @@ DEFAULT_INCLUDE_EXTENSIONS = {
     # (Many more included - see config.py for complete list)
 }
 ```
+
+**Note:** If a file extension is specified in both `include_extensions` and `exclude_extensions`, the exclusion takes precedence and files with that extension will not be processed.
 
 #### Default MarkItDown Extensions
 ```python

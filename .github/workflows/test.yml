@@ -1,4 +1,5 @@
 name: Tests
+# act -j test --container-architecture linux/amd64 -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
 on:
   push:

@@ -237,6 +237,11 @@ class Readium:
             self.log_debug(f"Excluding {path} due to exclude patterns")
             return False
 
+        # NEW: Check if the file extension is in the excluded extensions (case-insensitive)
+        if file_ext in {ext.lower() for ext in self.config.exclude_extensions}:
+            self.log_debug(f"Excluding {path} due to excluded extension {file_ext}")
+            return False
+
         # Check size
         if self.config.max_file_size >= 0:
             try:
