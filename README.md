@@ -81,32 +81,93 @@ poetry add readium
 
 Readium CLI extracts documentation and file structure from directories, Git repositories, or URLs.
 
-### Basic Example
+#### Basic Usage
 
 ```bash
-$ readium docs/
+# Process a local directory
+readium /path/to/directory
+
+# Process a public Git repository
+readium https://github.com/username/repository
+
+# Process a specific branch of a Git repository
+readium https://github.com/username/repository -b feature-branch
+
+# Process a private Git repository with token
+readium https://token@github.com/username/repository
+
+# Process a webpage and convert to Markdown
+readium https://example.com/documentation
+
+# Save output to a file
+readium /path/to/directory -o output.md
+
+# Enable MarkItDown integration (for PDF, DOCX, etc.)
+readium /path/to/directory --use-markitdown
+
+# Focus on specific subdirectory
+readium /path/to/directory --target-dir docs/
 ```
 
-This will display the token tree, file tree, and summary.
-
-### Show Only the Token Tree
+#### Advanced Options
 
 ```bash
-$ readium --tokens docs/
+# Customize file size limit (e.g., 10MB)
+readium /path/to/directory --max-size 10485760
+
+# Add custom directories to exclude (can be specified multiple times)
+readium /path/to/directory --exclude-dir build --exclude-dir temp
+# Or using the short form -x (can be repeated)
+readium /path/to/directory -x build -x temp
+
+# Include additional file extensions
+readium /path/to/directory --include-ext .cfg --include-ext .conf
+
+# Exclude specific file extensions (can be specified multiple times)
+readium /path/to/directory --exclude-ext .json --exclude-ext .yml
+
+# Enable debug mode for detailed processing information
+readium /path/to/directory --debug
+
+# Generate split files for fine-tuning
+readium /path/to/directory --split-output ./training-data/
+
+# Show only the token tree
+readium --tokens /path/to/directory
 # or
-$ readium tokens docs/
+readium tokens /path/to/directory
+
+# Process URL with content preservation mode
+readium https://example.com/docs --url-mode full
+
+# Process URL with main content extraction (default)
+readium https://example.com/docs --url-mode clean
 ```
 
-### Other Options
+#### Available Options
 
-- `--max-file-size <bytes>`: Maximum file size to process (default 5MB)
-- `--target-dir <dir>`: Target subdirectory for extraction
-- `--use-markitdown`: Enable MarkItDown for Markdown conversion
-- `--debug`: Display debug logs
+- `-o, --output <file>`: Save output to a specified file
+- `-t, --target-dir <dir>`: Target subdirectory for extraction
+- `-b, --branch <name>`: Specific Git branch to clone (only for Git repositories)
+- `-s, --max-size <bytes>`: Maximum file size to process (default: 5MB)
+- `-x, --exclude-dir <dir>`: Additional directories to exclude (can be specified multiple times)
+- `-i, --include-ext <ext>`: Additional file extensions to include (can be specified multiple times)
+- `-e, --exclude-ext <ext>`: File extensions to exclude (can be specified multiple times)
+- `--split-output <dir>`: Directory for split output files (each file gets its own UUID-named file)
+- `--url-mode <mode>`: URL processing mode: 'full' preserves all content, 'clean' extracts main content only (default: clean)
+- `--use-markitdown/--no-markitdown`: Enable/disable MarkItDown for Markdown conversion of PDF, DOCX, etc.
+- `--debug/-d, --no-debug/-D`: Enable/disable debug mode
+- `--tokens/--no-tokens`: Show/hide detailed token tree with file and directory token counts
 
-### Notes
-- The token tree always appears by default in the standard output.
-- There is no flag to disable the token tree.
+#### Notes
+
+- The default output includes summary, tree, and content.
+- When using `--tokens` or the `tokens` subcommand, only the token tree is displayed.
+- Do not use empty values with `-x`/`--exclude-dir`. Each value must be a valid directory name.
+- The CLI will display the final list of excluded directories before processing.
+- Default excluded directories include: `.git`, `node_modules`, `__pycache__`, etc.
+- Default included file extensions cover most text and code files (`.md`, `.py`, `.js`, etc.).
+- With MarkItDown integration, additional file types can be processed (`.pdf`, `.docx`, etc.).
 
 ### Python API
 
