@@ -17,6 +17,8 @@ from .config import (
     ReadConfig,
 )
 
+__all__ = ["ReadConfig", "Readium"]
+
 
 def is_git_url(url: str) -> bool:
     """Check if the given string is a git URL"""
@@ -280,6 +282,91 @@ class Readium:
         self.log_debug(f"Including {path} for processing")
         return True
 
+    def estimate_tokens(self, text: str) -> int:
+        """
+        Estimate the number of tokens in a text string using tiktoken.
+        """
+        import tiktoken
+
+        encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
+
+    def generate_token_tree(
+        self, files: list[dict[str, str]], base_path: Path, rich_only: bool = False
+    ) -> str:
+        """
+        Generate a token tree table grouped by directory.
+        If rich_only=True, only prints the Rich table and does not return markdown.
+        """
+        import os
+        from collections import defaultdict
+
+        from rich.console import Console
+        from rich.table import Table
+
+        console = Console()
+        dir_files: dict[str, list[dict[str, str]]] = defaultdict(list)
+        dir_totals: dict[str, int] = defaultdict(int)
+        total_tokens = 0
+        console.print("[yellow]Calculating tokens for files...[/yellow]")
+        for idx, file_info in enumerate(files):
+            path = file_info["path"]
+            content = file_info["content"]
+            tokens = self.estimate_tokens(content)
+            dir_path = os.path.dirname(path)
+            if not dir_path:
+                dir_path = "."
+            dir_files[dir_path].append(
+                {
+                    "filename": os.path.basename(path),
+                    "path": path,
+                    "tokens": str(tokens),
+                }
+            )
+            dir_totals[dir_path] += tokens
+            total_tokens += tokens
+            if idx % 10 == 0:
+                console.print(f"Processed {idx+1}/{len(files)} files...", end="\r")
+        console.print(f"Processed {len(files)} files.")
+        table = Table(title="Directory Token Tree")
+        table.add_column("Directory", style="cyan")
+        table.add_column("Files", style="green")
+        table.add_column("Token Count", style="yellow", justify="right")
+        for dir_path in sorted(dir_files.keys()):
+            files_in_dir = dir_files[dir_path]
+            dir_token_count = dir_totals[dir_path]
+            table.add_row(
+                f"[bold]{dir_path}[/bold]",
+                str(len(files_in_dir)),
+                f"{dir_token_count:,}",
+            )
+            for file_info in sorted(files_in_dir, key=lambda x: x["filename"]):
+                filename = file_info["filename"]
+                file_tokens = file_info["tokens"]
+                table.add_row(f"└─ {filename}", "", file_tokens)
+        console.print(table)
+        console.print(f"[bold]Total Files:[/bold] {len(files)}")
+        console.print(f"[bold]Total Tokens:[/bold] {total_tokens:,}")
+        if rich_only:
+            return ""
+        # Markdown table only if rich_only is False
+        md_table = "# Directory Token Tree\n\n"
+        md_table += "| Directory | Files | Token Count |\n"
+        md_table += "|-----------|-------|------------|\n"
+        for dir_path in sorted(dir_files.keys()):
+            files_in_dir = dir_files[dir_path]
+            dir_token_count = dir_totals[dir_path]
+            md_table += (
+                f"| **{dir_path}** | {len(files_in_dir)} | {dir_token_count:,} |\n"
+            )
+            for file_info in sorted(files_in_dir, key=lambda x: x["filename"]):
+                filename = file_info["filename"]
+                file_tokens = file_info["tokens"]
+                md_table += f"| └─ {filename} | | {file_tokens} |\n"
+        md_table += f"\n**Total Files:** {len(files)}  \n"
+        md_table += f"**Total Tokens:** {total_tokens:,}\n"
+        return md_table
+
     def read_docs(
         self, path: Union[str, Path], branch: Optional[str] = None
     ) -> Tuple[str, str, str]:
@@ -328,14 +415,22 @@ class Readium:
                     {"path": file_name, "content": markdown_content, "title": title}
                 ]
 
+                # Always generate the token tree
+                token_tree = self.generate_token_tree(
+                    file_info, Path(urllib.parse.urlparse(path).netloc)
+                )
+
                 # Write split files if output directory is specified
                 if self.split_output_dir:
                     self.write_split_files(
                         file_info, Path(urllib.parse.urlparse(path).netloc)
                     )
 
-                # Generate tree structure
-                tree = "Documentation Structure:\n"
+                # Generate the tree combining token tree and file structure
+                tree = ""
+                if token_tree:
+                    tree += token_tree.strip() + "\n\n"
+                tree += "Documentation Structure:\n"
                 tree += f"└── {file_name} (from {path})\n"
 
                 # Generate content
@@ -354,6 +449,8 @@ class Readium:
                     summary += (
                         f"Split files output directory: {self.split_output_dir}\n"
                     )
+                if token_tree:
+                    summary += f"Token Tree generated for URL content\n"
 
                 return summary, tree, content
 
@@ -364,6 +461,79 @@ class Readium:
             if not path_obj.exists():
                 raise ValueError(f"Path does not exist: {path}")
             return self._process_directory(path_obj)
+
+    def _process_directory(
+        self, path: Path, original_path: Optional[str] = None
+    ) -> Tuple[str, str, str]:
+        """Internal method to process a directory"""
+        files: List[Dict[str, str]] = []
+
+        # If target_dir is specified, look only in that subdirectory
+        if self.config.target_dir:
+            base_path = path / self.config.target_dir
+            if not base_path.exists():
+                raise ValueError(
+                    f"Target directory not found: {self.config.target_dir}"
+                )
+            path = base_path
+
+        for root, dirs, filenames in os.walk(path):
+            # Filter out excluded directories
+            dirs[:] = [d for d in dirs if d not in self.config.exclude_dirs]
+
+            for filename in filenames:
+                file_path = Path(root) / filename
+                if self.should_process_file(file_path):
+                    relative_path = file_path.relative_to(path)
+                    result = self._process_file(file_path, relative_path)
+                    if result:
+                        files.append(result)
+
+        # Write split files if output directory is specified
+        if self.split_output_dir:
+            self.write_split_files(files, path)
+
+        # Siempre generar el token tree (si hay archivos)
+        token_tree = ""
+        if files:
+            token_tree = self.generate_token_tree(files, path)
+
+        # Generar el tree combinando token tree y estructura de archivos
+        tree = ""
+        if token_tree:
+            tree += token_tree.strip() + "\n\n"
+        tree += "Documentation Structure:\n"
+        for file in files:
+            tree += f"└── {file['path']}\n"
+
+        # Generate content
+        content = "\n\n".join(
+            [
+                f"================================================\n"
+                f"File: {f['path']}\n"
+                f"================================================\n"
+                f"{f['content']}"
+                for f in files
+            ]
+        )
+
+        # Generate summary
+        summary = f"Path analyzed: {original_path or path}\n"
+        summary += f"Files processed: {len(files)}\n"
+        if self.config.target_dir:
+            summary += f"Target directory: {self.config.target_dir}\n"
+        if self.config.use_markitdown:
+            summary += "Using MarkItDown for compatible files\n"
+            if self.config.markitdown_extensions:
+                summary += f"MarkItDown extensions: {', '.join(self.config.markitdown_extensions)}\n"
+        if self.branch:
+            summary += f"Git branch: {self.branch}\n"
+        if self.split_output_dir:
+            summary += f"Split files output directory: {self.split_output_dir}\n"
+        if token_tree:
+            summary += f"Token Tree generated with {len(files)} files\n"
+
+        return summary, tree, content
 
     def _process_file(
         self, file_path: Path, relative_path: Path
@@ -438,66 +608,3 @@ class Readium:
             # Write the file
             with open(output_file, "w", encoding="utf-8", errors="ignore") as f:
                 f.write(content)
-
-    def _process_directory(
-        self, path: Path, original_path: Optional[str] = None
-    ) -> Tuple[str, str, str]:
-        """Internal method to process a directory"""
-        files: List[Dict[str, str]] = []
-
-        # If target_dir is specified, look only in that subdirectory
-        if self.config.target_dir:
-            base_path = path / self.config.target_dir
-            if not base_path.exists():
-                raise ValueError(
-                    f"Target directory not found: {self.config.target_dir}"
-                )
-            path = base_path
-
-        for root, dirs, filenames in os.walk(path):
-            # Filter out excluded directories
-            dirs[:] = [d for d in dirs if d not in self.config.exclude_dirs]
-
-            for filename in filenames:
-                file_path = Path(root) / filename
-                if self.should_process_file(file_path):
-                    relative_path = file_path.relative_to(path)
-                    result = self._process_file(file_path, relative_path)
-                    if result:
-                        files.append(result)
-
-        # Write split files if output directory is specified
-        if self.split_output_dir:
-            self.write_split_files(files, path)
-
-        # Generate tree
-        tree = "Documentation Structure:\n"
-        for file in files:
-            tree += f"└── {file['path']}\n"
-
-        # Generate content
-        content = "\n\n".join(
-            [
-                f"================================================\n"
-                f"File: {f['path']}\n"
-                f"================================================\n"
-                f"{f['content']}"
-                for f in files
-            ]
-        )
-
-        # Generate summary
-        summary = f"Path analyzed: {original_path or path}\n"
-        summary += f"Files processed: {len(files)}\n"
-        if self.config.target_dir:
-            summary += f"Target directory: {self.config.target_dir}\n"
-        if self.config.use_markitdown:
-            summary += "Using MarkItDown for compatible files\n"
-            if self.config.markitdown_extensions:
-                summary += f"MarkItDown extensions: {', '.join(self.config.markitdown_extensions)}\n"
-        if self.branch:
-            summary += f"Git branch: {self.branch}\n"
-        if self.split_output_dir:
-            summary += f"Split files output directory: {self.split_output_dir}\n"
-
-        return summary, tree, content
