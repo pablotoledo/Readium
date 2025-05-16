@@ -84,6 +84,12 @@ poetry add readium
 # Process a local directory
 readium /path/to/directory
 
+# La salida mostrará por defecto:
+# 1. Summary
+# 2. Tabla de tokens por archivo/directorio (token tree)
+# 3. Estructura de archivos (file tree)
+# 4. Content
+
 # Process a public Git repository
 readium https://github.com/username/repository
 
@@ -152,7 +158,10 @@ config = ReadConfig(
     max_file_size=5 * 1024 * 1024,  # 5MB limit
     target_dir='docs',               # Optional target subdirectory
     use_markitdown=True,            # Enable MarkItDown integration
-    debug=True                      # Enable debug logging
+    debug=True,                      # Enable debug logging
+
+    # Mostrar tabla de tokens por archivo/directorio
+    show_token_tree=False,  # True para activar el token tree
 )
 
 # Initialize reader
@@ -275,7 +284,10 @@ config = ReadConfig(
     include_comments=False,
 
     # Enable debug mode
-    debug=False
+    debug=False,
+
+    # Mostrar tabla de tokens por archivo/directorio
+    show_token_tree=False,  # True para activar el token tree
 )
 ```
 
@@ -336,8 +348,21 @@ Readium generates three types of output:
    MarkItDown extensions: .pdf, .docx, .xlsx, ...
    ```
 
-2. **Tree**: Visual representation of processed files
+2. **Tree**: Token table + file tree
    ```
+   # Directory Token Tree
+   | Directory | Files | Token Count |
+   |-----------|-------|------------|
+   | **.**     | 2     | 460        |
+   | **docs**  | 1     | 340        |
+   | **src**   | 1     | 210        |
+   | └─ README.md |   | 120        |
+   | └─ guide.md  |   | 340        |
+   | └─ example.py|   | 210        |
+   
+   **Total Files:** 4  
+   **Total Tokens:** 670
+
    Documentation Structure:
    └── README.md
    └── docs/guide.md
@@ -356,6 +381,95 @@ Readium generates three types of output:
    ================================================
    [File content here]
    ```
+
+> **Note:** The token tree (token count table) is now always included at the top of the 'tree' output, both in CLI and Python API, for all standard runs. The `--tokens` flag still works to show only the token tree if desired.
+
+## 🔢 Token Tree (Conteo de tokens por archivo/directorio)
+
+Readium puede generar una tabla de conteo de tokens por archivo y directorio, útil para estimar el tamaño de los datos para modelos de lenguaje o para análisis de documentación.
+
+- El token tree muestra la estructura de carpetas/archivos junto con el número de tokens estimados por cada uno.
+- Puede usarse tanto desde la línea de comandos como desde la API Python.
+- El conteo de tokens usa siempre la librería [tiktoken](https://github.com/openai/tiktoken) de OpenAI, igual que los modelos GPT-3.5/4.
+
+### Ejemplo de salida
+```
+Token Tree:
+└── README.md (tokens: 120)
+└── docs/guide.md (tokens: 340)
+└── src/example.py (tokens: 210)
+Total tokens: 670
+```
+
+### CLI: Uso de Token Tree
+
+```bash
+# Mostrar el token tree (siempre usando tiktoken)
+readium /ruta/al/proyecto --token-tree
+
+# Desactivar el token tree (por defecto)
+readium /ruta/al/proyecto --no-token-tree
+```
+
+- `--token-tree` activa la tabla de tokens.
+- El conteo de tokens es siempre exacto usando tiktoken (igual que OpenAI).
+
+### Python API: Uso de Token Tree
+
+```python
+from readium import Readium, ReadConfig
+
+config = ReadConfig(
+    show_token_tree=True,                # Activa el token tree
+    # token_calculation ya no es necesario, siempre es tiktoken
+)
+reader = Readium(config)
+summary, tree, content = reader.read_docs("/ruta/al/proyecto")
+# El token tree estará incluido en el summary y/o tree
+```
+
+#### Instalación de tiktoken
+
+Para usar el conteo de tokens, instala la dependencia:
+
+```bash
+poetry install --with tokenizers
+# o
+pip install tiktoken
+```
+
+---
+
+## 🔢 Token Tree como utilidad independiente
+
+Readium permite ahora obtener únicamente el listado de tokens por archivo/directorio sin procesar el resto de la documentación, usando el subcomando CLI:
+
+### CLI: Solo token tree
+
+```bash
+readium tokens <ruta> [opciones]
+```
+
+- Ejemplo básico:
+  ```bash
+  readium tokens .
+  ```
+- Excluir extensiones:
+  ```bash
+  readium tokens . --exclude-ext .md
+  ```
+
+Esto mostrará únicamente la tabla de tokens (usando el método tiktoken, igual que OpenAI), sin el resumen ni el contenido de los archivos.
+
+### ¿Cómo se cuentan los tokens?
+
+Readium usa siempre la librería [tiktoken](https://github.com/openai/tiktoken) de OpenAI para contar tokens, igual que los modelos GPT-3.5/4. Esto te da una estimación realista de cuántos tokens consumiría tu texto en la API de OpenAI.
+
+### Python API
+
+Para uso programático, sigue usando `Readium.generate_token_tree()` sobre la lista de archivos procesados si solo quieres el token tree.
+
+---
 
 ## 📝 Split Output for Fine-tuning
 

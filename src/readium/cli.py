@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 from typing import Literal, cast  # Añadimos cast para el tipado
 
@@ -49,7 +51,7 @@ Examples:
 Note: Do not use empty values with -x/--exclude-dir. Each value must be a valid directory name.
 """
 )
-@click.argument("path", type=str)
+@click.argument("args", nargs=-1)
 @click.option(
     "--target-dir", "-t", help="Target subdirectory to analyze (for directories)"
 )
@@ -106,22 +108,53 @@ Note: Do not use empty values with -x/--exclude-dir. Each value must be a valid 
     default=False,
     help="Use MarkItDown to convert compatible document formats (PDF, DOCX, etc.)",
 )
+@click.option(
+    "--tokens/--no-tokens",
+    default=False,
+    help="Show a detailed token tree with file and directory token counts (tiktoken)",
+)
 def main(
-    path: str,
-    target_dir: str,
-    branch: str,
-    max_size: int,
-    output: str,
-    split_output: str,
-    exclude_dir: tuple,
-    include_ext: tuple,
-    exclude_ext: tuple,
-    url_mode: str,
-    debug: bool,
-    use_markitdown: bool,
+    args,
+    target_dir: str = None,
+    branch: str = None,
+    max_size: int = 5 * 1024 * 1024,
+    output: str = None,
+    split_output: str = None,
+    exclude_dir: tuple = (),
+    include_ext: tuple = (),
+    exclude_ext: tuple = (),
+    url_mode: str = "clean",
+    debug: bool = False,
+    use_markitdown: bool = False,
+    tokens: bool = False,
 ):
     """Read and analyze documentation from a directory, repository, or URL"""
     try:
+        # Parsing manual de argumentos
+        path = None
+        # Soporte para --token-tree como flag (no como path)
+        if '--token-tree' in args:
+            tokens = True
+            args = tuple(a for a in args if a != '--token-tree')
+            if len(args) == 0:
+                raise click.UsageError("Missing required argument 'path'.")
+            if args[0] == 'tokens':
+                if len(args) < 2:
+                    raise click.UsageError("You must provide a path after 'tokens'.")
+                path = args[1]
+            else:
+                path = args[0]
+        else:
+            if len(args) == 0:
+                raise click.UsageError("Missing required argument 'path'.")
+            if args[0] == "tokens":
+                tokens = True
+                if len(args) < 2:
+                    raise click.UsageError("You must provide a path after 'tokens'.")
+                path = args[1]
+            else:
+                path = args[0]
+
         # Validación: no permitir valores vacíos en --exclude-dir / -x
         for d in exclude_dir:
             if not d or d.strip() == "":
@@ -154,6 +187,8 @@ def main(
             if use_markitdown
             else set(),
             debug=debug,
+            show_token_tree=tokens,
+            token_calculation="tiktoken",
         )
 
         reader = Readium(config)
@@ -161,6 +196,14 @@ def main(
             reader.split_output_dir = split_output
 
         summary, tree, content = reader.read_docs(path, branch=branch)
+
+        if tokens:
+            # Solo mostrar el token tree en modo markdown y salir
+            token_tree = tree.split("Documentation Structure:")[0].strip()
+            if not token_tree:
+                token_tree = "# Directory Token Tree\n\n**Total Files:** 0  \n**Total Tokens:** 0"
+            click.echo(token_tree)
+            return None
 
         if output:
             with open(output, "w", encoding="utf-8") as f:
@@ -195,4 +238,8 @@ def main(
 
 
 if __name__ == "__main__":
+    # Permitir poetry run python -m readium ...
+    if len(sys.argv) > 1 and sys.argv[1] == "tokens":
+        # Redirigir a main con --tokens
+        sys.argv = [sys.argv[0]] + sys.argv[2:] + ["--tokens"]
     main()

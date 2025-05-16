@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Literal, Optional, Set, Tuple  # Add Tuple for function return type
+from typing import Literal, Optional, Set, Tuple, Union  # Add Tuple and Union for function return type
 
 DEFAULT_EXCLUDE_DIRS = {
     ".git",
@@ -188,6 +188,9 @@ class ReadConfig:
     include_tables: bool = True  # Include tables from web pages (new)
     include_images: bool = True  # Include image references (new)
     include_links: bool = True  # Include links (new)
+    show_token_tree: bool = False  # Show token tree (new)
+    # Solo tiktoken
+    token_calculation: Literal["tiktoken"] = "tiktoken"  # Token calculation mode (solo tiktoken)
 
 
 def convert_url_to_markdown(url: str, config: ReadConfig) -> Tuple[str, str]:
