@@ -79,74 +79,34 @@ poetry add readium
 
 ### Command Line Interface
 
-**Basic usage:**
+Readium CLI extrae documentación y estructura de archivos de directorios, repositorios Git o URLs.
+
+### Ejemplo básico
+
 ```bash
-# Process a local directory
-readium /path/to/directory
-
-# La salida mostrará por defecto:
-# 1. Summary
-# 2. Tabla de tokens por archivo/directorio (token tree)
-# 3. Estructura de archivos (file tree)
-# 4. Content
-
-# Process a public Git repository
-readium https://github.com/username/repository
-
-# Process a specific branch of a Git repository
-readium https://github.com/username/repository -b feature-branch
-
-# Process a private Git repository with token
-readium https://token@github.com/username/repository
-
-# Process a webpage and convert to Markdown
-readium https://example.com/documentation
-
-# Save output to a file
-readium /path/to/directory -o output.md
-
-# Enable MarkItDown integration (for PDF, DOCX, etc.)
-readium /path/to/directory --use-markitdown
-
-# Focus on specific subdirectory
-readium /path/to/directory --target-dir docs/
+$ readium docs/
 ```
 
-**Advanced options:**
+Esto mostrará la tabla de tokens (token tree), el árbol de archivos y el resumen.
+
+### Mostrar solo la tabla de tokens
+
 ```bash
-# Customize file size limit (e.g., 10MB)
-readium /path/to/directory --max-size 10485760
-
-# Add custom directories to exclude (can be specified multiple times)
-readium /path/to/directory --exclude-dir build --exclude-dir temp
-
-# Or using the short form -x (can be repeated)
-readium /path/to/directory -x build -x temp
-
-# Include additional file extensions
-readium /path/to/directory --include-ext .cfg --include-ext .conf
-
-# The CLI will print the final list of excluded directories at runtime.
-
-# Exclude specific file extensions (can be specified multiple times)
-readium /path/to/directory --exclude-ext .json --exclude-ext .yml
-
-# Enable debug mode for detailed processing information
-readium /path/to/directory --debug
-
-# Generate split files for fine-tuning
-readium /path/to/directory --split-output ./training-data/
-
-# Process URL with content preservation mode
-readium https://example.com/docs --url-mode full
-
-# Process URL with main content extraction (default)
-readium https://example.com/docs --url-mode clean
+$ readium --tokens docs/
+# o
+$ readium tokens docs/
 ```
 
-**Note:**
-- Do not use empty values with `-x`/`--exclude-dir`. Each value must be a valid directory name.
-- The CLI will display the final list of excluded directories before processing.
+### Otras opciones
+
+- `--max-file-size <bytes>`: Tamaño máximo de archivo a procesar (por defecto 5MB)
+- `--target-dir <dir>`: Subdirectorio objetivo para la extracción
+- `--use-markitdown`: Habilita MarkItDown para conversión Markdown
+- `--debug`: Muestra logs de depuración
+
+### Notas
+- El token tree siempre aparece por defecto en la salida estándar.
+- No existe un flag para desactivar el token tree.
 
 ### Python API
 
@@ -159,9 +119,6 @@ config = ReadConfig(
     target_dir='docs',               # Optional target subdirectory
     use_markitdown=True,            # Enable MarkItDown integration
     debug=True,                      # Enable debug logging
-
-    # Mostrar tabla de tokens por archivo/directorio
-    show_token_tree=False,  # True para activar el token tree
 )
 
 # Initialize reader
@@ -359,8 +316,8 @@ Readium generates three types of output:
    | └─ README.md |   | 120        |
    | └─ guide.md  |   | 340        |
    | └─ example.py|   | 210        |
-   
-   **Total Files:** 4  
+
+   **Total Files:** 4
    **Total Tokens:** 670
 
    Documentation Structure:
@@ -383,6 +340,52 @@ Readium generates three types of output:
    ```
 
 > **Note:** The token tree (token count table) is now always included at the top of the 'tree' output, both in CLI and Python API, for all standard runs. The `--tokens` flag still works to show only the token tree if desired.
+
+## 🔢 Token Tree (Token Counts)
+
+Readium siempre incluye una tabla de conteo de tokens (token tree) al inicio de la sección "tree" de la salida estándar, tanto en la CLI como en la API de Python. Esta tabla muestra el número de tokens por archivo y por directorio, utilizando el tokenizador tiktoken (compatible con modelos OpenAI).
+
+### Ejemplo de salida estándar
+
+```bash
+$ readium docs/
+
+Token Tree:
+| Path         | Tokens |
+|-------------|--------|
+| docs/       | 12345  |
+| docs/a.md   | 2345   |
+| docs/b.md   | 3456   |
+| docs/sub/   | 4567   |
+| docs/sub/x.py | 456   |
+
+Tree:
+- docs/
+  - a.md
+  - b.md
+  - sub/
+    - x.py
+
+Summary:
+- ...
+```
+
+### Mostrar solo la tabla de tokens
+
+Para mostrar únicamente la tabla de tokens, use el flag `--tokens` o el subcomando `tokens`:
+
+```bash
+$ readium --tokens docs/
+# o
+$ readium tokens docs/
+```
+
+Esto funciona tanto con `readium` como con `python -m readium`.
+
+### Notas
+- El token tree siempre aparece por defecto en la salida estándar.
+- No existe un flag para desactivar el token tree.
+- El token tree utiliza tiktoken como único método de tokenización.
 
 ## 🔢 Token Tree (Conteo de tokens por archivo/directorio)
 

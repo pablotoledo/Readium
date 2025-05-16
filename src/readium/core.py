@@ -17,6 +17,8 @@ from .config import (
     ReadConfig,
 )
 
+__all__ = ["ReadConfig", "Readium"]
+
 
 def is_git_url(url: str) -> bool:
     """Check if the given string is a git URL"""
@@ -285,35 +287,42 @@ class Readium:
         Estimate the number of tokens in a text string using tiktoken.
         """
         import tiktoken
+
         encoding = tiktoken.get_encoding("cl100k_base")
         return len(encoding.encode(text))
 
-    def generate_token_tree(self, files: list, base_path: Path, rich_only: bool = False) -> str:
+    def generate_token_tree(
+        self, files: list[dict[str, str]], base_path: Path, rich_only: bool = False
+    ) -> str:
         """
         Generate a token tree table grouped by directory.
         If rich_only=True, solo imprime la tabla Rich y no retorna markdown.
         """
+        import os
+        from collections import defaultdict
+
         from rich.console import Console
         from rich.table import Table
-        from collections import defaultdict
-        import os
+
         console = Console()
-        dir_files = defaultdict(list)
-        dir_totals = defaultdict(int)
+        dir_files: dict[str, list[dict[str, str]]] = defaultdict(list)
+        dir_totals: dict[str, int] = defaultdict(int)
         total_tokens = 0
         console.print("[yellow]Calculating tokens for files...[/yellow]")
         for idx, file_info in enumerate(files):
-            path = file_info['path']
-            content = file_info['content']
+            path = file_info["path"]
+            content = file_info["content"]
             tokens = self.estimate_tokens(content)
             dir_path = os.path.dirname(path)
             if not dir_path:
-                dir_path = '.'
-            dir_files[dir_path].append({
-                'filename': os.path.basename(path),
-                'path': path,
-                'tokens': tokens
-            })
+                dir_path = "."
+            dir_files[dir_path].append(
+                {
+                    "filename": os.path.basename(path),
+                    "path": path,
+                    "tokens": str(tokens),
+                }
+            )
             dir_totals[dir_path] += tokens
             total_tokens += tokens
             if idx % 10 == 0:
@@ -326,10 +335,14 @@ class Readium:
         for dir_path in sorted(dir_files.keys()):
             files_in_dir = dir_files[dir_path]
             dir_token_count = dir_totals[dir_path]
-            table.add_row(f"[bold]{dir_path}[/bold]", str(len(files_in_dir)), f"{dir_token_count:,}")
-            for file_info in sorted(files_in_dir, key=lambda x: x['filename']):
-                filename = file_info['filename']
-                file_tokens = file_info['tokens']
+            table.add_row(
+                f"[bold]{dir_path}[/bold]",
+                str(len(files_in_dir)),
+                f"{dir_token_count:,}",
+            )
+            for file_info in sorted(files_in_dir, key=lambda x: x["filename"]):
+                filename = file_info["filename"]
+                file_tokens = file_info["tokens"]
                 table.add_row(f"└─ {filename}", "", f"{file_tokens:,}")
         console.print(table)
         console.print(f"[bold]Total Files:[/bold] {len(files)}")
@@ -343,10 +356,12 @@ class Readium:
         for dir_path in sorted(dir_files.keys()):
             files_in_dir = dir_files[dir_path]
             dir_token_count = dir_totals[dir_path]
-            md_table += f"| **{dir_path}** | {len(files_in_dir)} | {dir_token_count:,} |\n"
-            for file_info in sorted(files_in_dir, key=lambda x: x['filename']):
-                filename = file_info['filename']
-                file_tokens = file_info['tokens']
+            md_table += (
+                f"| **{dir_path}** | {len(files_in_dir)} | {dir_token_count:,} |\n"
+            )
+            for file_info in sorted(files_in_dir, key=lambda x: x["filename"]):
+                filename = file_info["filename"]
+                file_tokens = file_info["tokens"]
                 md_table += f"| └─ {filename} | | {file_tokens:,} |\n"
         md_table += f"\n**Total Files:** {len(files)}  \n"
         md_table += f"**Total Tokens:** {total_tokens:,}\n"
@@ -401,7 +416,9 @@ class Readium:
                 ]
 
                 # Siempre generar el token tree
-                token_tree = self.generate_token_tree(file_info, Path(urllib.parse.urlparse(path).netloc))
+                token_tree = self.generate_token_tree(
+                    file_info, Path(urllib.parse.urlparse(path).netloc)
+                )
 
                 # Write split files if output directory is specified
                 if self.split_output_dir:

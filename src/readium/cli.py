@@ -1,7 +1,12 @@
 import os
 import sys
 from pathlib import Path
-from typing import Literal, cast  # Añadimos cast para el tipado
+from typing import (  # Añadimos cast, Optional y Tuple para el tipado
+    Literal,
+    Optional,
+    Tuple,
+    cast,
+)
 
 import click
 from rich.console import Console
@@ -114,31 +119,31 @@ Note: Do not use empty values with -x/--exclude-dir. Each value must be a valid 
     help="Show a detailed token tree with file and directory token counts (tiktoken)",
 )
 def main(
-    args,
-    target_dir: str = None,
-    branch: str = None,
+    args: Tuple[str, ...],
+    target_dir: Optional[str] = None,
+    branch: Optional[str] = None,
     max_size: int = 5 * 1024 * 1024,
-    output: str = None,
-    split_output: str = None,
-    exclude_dir: tuple = (),
-    include_ext: tuple = (),
-    exclude_ext: tuple = (),
+    output: Optional[str] = None,
+    split_output: Optional[str] = None,
+    exclude_dir: Tuple[str, ...] = (),
+    include_ext: Tuple[str, ...] = (),
+    exclude_ext: Tuple[str, ...] = (),
     url_mode: str = "clean",
     debug: bool = False,
     use_markitdown: bool = False,
     tokens: bool = False,
-):
+) -> None:
     """Read and analyze documentation from a directory, repository, or URL"""
     try:
         # Parsing manual de argumentos
         path = None
         # Soporte para --token-tree como flag (no como path)
-        if '--token-tree' in args:
+        if "--token-tree" in args:
             tokens = True
-            args = tuple(a for a in args if a != '--token-tree')
+            args = tuple(a for a in args if a != "--token-tree")
             if len(args) == 0:
                 raise click.UsageError("Missing required argument 'path'.")
-            if args[0] == 'tokens':
+            if args[0] == "tokens":
                 if len(args) < 2:
                     raise click.UsageError("You must provide a path after 'tokens'.")
                 path = args[1]
