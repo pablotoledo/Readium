@@ -7,8 +7,8 @@ from readium.cli import main
 
 
 def test_tokens_command_basic(tmp_path):
-    (tmp_path / "a.md").write_text("Uno dos tres cuatro cinco")
-    (tmp_path / "b.txt").write_text("Seis siete ocho nueve diez once")
+    (tmp_path / "a.md").write_text("One two three four five")
+    (tmp_path / "b.txt").write_text("Six seven eight nine ten eleven")
     runner = CliRunner()
     result = runner.invoke(main, ["tokens", str(tmp_path)])
     assert result.exit_code == 0
@@ -19,8 +19,8 @@ def test_tokens_command_basic(tmp_path):
 
 
 def test_tokens_command_exclude_ext(tmp_path):
-    (tmp_path / "a.md").write_text("Uno dos tres cuatro cinco")
-    (tmp_path / "b.txt").write_text("Seis siete ocho nueve diez once")
+    (tmp_path / "a.md").write_text("One two three four five")
+    (tmp_path / "b.txt").write_text("Six seven eight nine ten eleven")
     runner = CliRunner()
     result = runner.invoke(main, ["tokens", str(tmp_path), "--exclude-ext", ".md"])
     assert result.exit_code == 0

@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import (  # Añadimos cast, Optional y Tuple para el tipado
+from typing import (  # Adding cast, Optional and Tuple for typing
     Literal,
     Optional,
     Tuple,
@@ -12,7 +12,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from .config import URL_MODES  # Importamos URL_MODES para el tipado
+from .config import URL_MODES  # Importing URL_MODES for typing
 from .config import (
     DEFAULT_EXCLUDE_DIRS,
     DEFAULT_INCLUDE_EXTENSIONS,
@@ -135,9 +135,9 @@ def main(
 ) -> None:
     """Read and analyze documentation from a directory, repository, or URL"""
     try:
-        # Parsing manual de argumentos
+        # Manual argument parsing
         path = None
-        # Soporte para --token-tree como flag (no como path)
+        # Support for --token-tree as a flag (not as path)
         if "--token-tree" in args:
             tokens = True
             args = tuple(a for a in args if a != "--token-tree")
@@ -160,18 +160,18 @@ def main(
             else:
                 path = args[0]
 
-        # Validación: no permitir valores vacíos en --exclude-dir / -x
+        # Validation: do not allow empty values in --exclude-dir / -x
         for d in exclude_dir:
             if not d or d.strip() == "":
                 raise click.UsageError(
                     "Empty value detected for --exclude-dir/-x. Please provide a valid directory name."
                 )
 
-        # Validamos que url_mode sea uno de los valores permitidos
+        # Validate that url_mode is one of the allowed values
         if url_mode not in ("full", "clean"):
-            url_mode = "clean"  # Valor por defecto si no es válido
+            url_mode = "clean"  # Default value if not valid
 
-        # Mostrar al usuario la lista final de directorios excluidos
+        # Show the user the final list of excluded directories
         final_exclude_dirs = DEFAULT_EXCLUDE_DIRS | set(exclude_dir)
         if exclude_dir:
             console.print(

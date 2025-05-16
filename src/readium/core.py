@@ -296,7 +296,7 @@ class Readium:
     ) -> str:
         """
         Generate a token tree table grouped by directory.
-        If rich_only=True, solo imprime la tabla Rich y no retorna markdown.
+        If rich_only=True, only prints the Rich table and does not return markdown.
         """
         import os
         from collections import defaultdict
@@ -343,13 +343,13 @@ class Readium:
             for file_info in sorted(files_in_dir, key=lambda x: x["filename"]):
                 filename = file_info["filename"]
                 file_tokens = file_info["tokens"]
-                table.add_row(f"└─ {filename}", "", f"{file_tokens:,}")
+                table.add_row(f"└─ {filename}", "", file_tokens)
         console.print(table)
         console.print(f"[bold]Total Files:[/bold] {len(files)}")
         console.print(f"[bold]Total Tokens:[/bold] {total_tokens:,}")
         if rich_only:
             return ""
-        # Markdown table solo si rich_only es False
+        # Markdown table only if rich_only is False
         md_table = "# Directory Token Tree\n\n"
         md_table += "| Directory | Files | Token Count |\n"
         md_table += "|-----------|-------|------------|\n"
@@ -362,7 +362,7 @@ class Readium:
             for file_info in sorted(files_in_dir, key=lambda x: x["filename"]):
                 filename = file_info["filename"]
                 file_tokens = file_info["tokens"]
-                md_table += f"| └─ {filename} | | {file_tokens:,} |\n"
+                md_table += f"| └─ {filename} | | {file_tokens} |\n"
         md_table += f"\n**Total Files:** {len(files)}  \n"
         md_table += f"**Total Tokens:** {total_tokens:,}\n"
         return md_table
@@ -415,7 +415,7 @@ class Readium:
                     {"path": file_name, "content": markdown_content, "title": title}
                 ]
 
-                # Siempre generar el token tree
+                # Always generate the token tree
                 token_tree = self.generate_token_tree(
                     file_info, Path(urllib.parse.urlparse(path).netloc)
                 )
@@ -426,7 +426,7 @@ class Readium:
                         file_info, Path(urllib.parse.urlparse(path).netloc)
                     )
 
-                # Generar el tree combinando token tree y estructura de archivos
+                # Generate the tree combining token tree and file structure
                 tree = ""
                 if token_tree:
                     tree += token_tree.strip() + "\n\n"

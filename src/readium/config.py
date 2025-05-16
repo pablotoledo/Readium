@@ -195,10 +195,10 @@ class ReadConfig:
     include_images: bool = True  # Include image references (new)
     include_links: bool = True  # Include links (new)
     show_token_tree: bool = False  # Show token tree (new)
-    # Solo tiktoken
+    # Only tiktoken
     token_calculation: Literal[
         "tiktoken"
-    ] = "tiktoken"  # Token calculation mode (solo tiktoken)
+    ] = "tiktoken"  # Token calculation mode (only tiktoken)
 
 
 def convert_url_to_markdown(url: str, config: ReadConfig) -> Tuple[str, str]:
