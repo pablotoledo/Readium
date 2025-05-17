@@ -18,6 +18,16 @@ def test_help_includes_examples():
     assert "Process a local directory" in result.output
 
 
+def test_tokens_command_in_help():
+    """Test that the tokens command is described in help text"""
+    runner = CliRunner()
+    result = runner.invoke(main, ["--help"])
+    assert "tokens" in result.output
+    assert (
+        "Show a detailed token tree" in result.output or "token tree" in result.output
+    )
+
+
 def test_exclude_dir_single(monkeypatch):
     """Test using -x once passes the value to the config."""
     runner = CliRunner()

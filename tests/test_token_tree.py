@@ -68,17 +68,23 @@ def test_read_docs_with_token_tree(temp_dir_with_files):
     config = ReadConfig(show_token_tree=True)
     reader = Readium(config)
     summary, tree, content = reader.read_docs(temp_dir_with_files)
-    assert "Token Tree generated" in summary
-    assert "# Directory Token Tree" in tree
+    # When show_token_tree is True, tree should be empty or just the header
+    assert tree.strip() == "" or tree.strip().startswith("Documentation Structure:")
 
 
 def test_cli_with_token_tree(temp_dir_with_files):
-    """Test CLI with token tree option"""
+    """Test CLI with token tree option using both methods"""
     runner = CliRunner()
-    result = runner.invoke(main, [str(temp_dir_with_files), "--tokens"])
-    print("CLI OUTPUT:\n", result.output)
-    assert "# Directory Token Tree" in result.output
-    assert result.exit_code == 0
+    # Test with flag
+    result_flag = runner.invoke(main, [str(temp_dir_with_files), "--tokens"])
+    assert "# Directory Token Tree" in result_flag.output
+    assert result_flag.exit_code == 0
+    # Test with subcommand
+    result_cmd = runner.invoke(main, ["tokens", str(temp_dir_with_files)])
+    assert "# Directory Token Tree" in result_cmd.output
+    assert result_cmd.exit_code == 0
+    # Output should be identical
+    assert result_flag.output == result_cmd.output
 
 
 def test_backward_compatibility():

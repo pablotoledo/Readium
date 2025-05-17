@@ -137,28 +137,19 @@ def main(
     try:
         # Manual argument parsing
         path = None
-        # Support for --token-tree as a flag (not as path)
-        if "--token-tree" in args:
+        token_command = False
+        # Detect 'tokens' subcommand or --tokens flag
+        if len(args) > 0 and args[0] == "tokens":
+            token_command = True
             tokens = True
-            args = tuple(a for a in args if a != "--token-tree")
-            if len(args) == 0:
-                raise click.UsageError("Missing required argument 'path'.")
-            if args[0] == "tokens":
-                if len(args) < 2:
-                    raise click.UsageError("You must provide a path after 'tokens'.")
-                path = args[1]
-            else:
-                path = args[0]
+            if len(args) < 2:
+                raise click.UsageError("You must provide a path after 'tokens'.")
+            path = args[1]
+            args = args[1:]
         else:
             if len(args) == 0:
                 raise click.UsageError("Missing required argument 'path'.")
-            if args[0] == "tokens":
-                tokens = True
-                if len(args) < 2:
-                    raise click.UsageError("You must provide a path after 'tokens'.")
-                path = args[1]
-            else:
-                path = args[0]
+            path = args[0]
 
         # Validation: do not allow empty values in --exclude-dir / -x
         for d in exclude_dir:
@@ -203,7 +194,7 @@ def main(
         summary, tree, content = reader.read_docs(path, branch=branch)
 
         if tokens:
-            # Solo mostrar el token tree en modo markdown y salir
+            # Only show the token tree and exit, use rich_only=True to avoid duplication
             token_tree = tree.split("Documentation Structure:")[0].strip()
             if not token_tree:
                 token_tree = "# Directory Token Tree\n\n**Total Files:** 0  \n**Total Tokens:** 0"

@@ -349,7 +349,7 @@ class Readium:
         console.print(f"[bold]Total Tokens:[/bold] {total_tokens:,}")
         if rich_only:
             return ""
-        # Markdown table only if rich_only is False
+        # Markdown table generation (only if rich_only is False)
         md_table = "# Directory Token Tree\n\n"
         md_table += "| Directory | Files | Token Count |\n"
         md_table += "|-----------|-------|------------|\n"
@@ -496,7 +496,9 @@ class Readium:
         # Siempre generar el token tree (si hay archivos)
         token_tree = ""
         if files:
-            token_tree = self.generate_token_tree(files, path)
+            # When using the tokens command/flag, use rich_only=True to avoid duplication
+            rich_only = self.config.show_token_tree
+            token_tree = self.generate_token_tree(files, path, rich_only=rich_only)
 
         # Generar el tree combinando token tree y estructura de archivos
         tree = ""

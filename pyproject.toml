@@ -1,6 +1,6 @@
 [project]
 name = "readium"
-version = "0.5.0"
+version = "0.5.2"
 description = "A tool to extract and analyze documentation from repositories, directories, and URLs"
 authors = [
     {name = "Pablo Toledo", email = "pablotoledo@users.noreply.github.com"}
