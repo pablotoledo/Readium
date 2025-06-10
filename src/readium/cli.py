@@ -152,19 +152,21 @@ def main(
             path = args[0]
 
         # Validation: do not allow empty values in --exclude-dir / -x
+        sanitized_exclude = []
         for d in exclude_dir:
             if not d or d.strip() == "":
                 raise click.UsageError(
                     "Empty value detected for --exclude-dir/-x. Please provide a valid directory name."
                 )
+            sanitized_exclude.append(Path(d).name)
 
         # Validate that url_mode is one of the allowed values
         if url_mode not in ("full", "clean"):
             url_mode = "clean"  # Default value if not valid
 
         # Show the user the final list of excluded directories
-        final_exclude_dirs = DEFAULT_EXCLUDE_DIRS | set(exclude_dir)
-        if exclude_dir:
+        final_exclude_dirs = DEFAULT_EXCLUDE_DIRS | set(sanitized_exclude)
+        if sanitized_exclude:
             console.print(
                 f"[yellow]Excluding directories:[/yellow] {', '.join(sorted(final_exclude_dirs))}"
             )
