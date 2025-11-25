@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple, Union
 
+import pathspec
 from markitdown import FileConversionException, MarkItDown, UnsupportedFormatException
 
 from .config import (
@@ -202,6 +203,19 @@ class Readium:
         """Print debug messages if debug mode is enabled"""
         if self.config.debug:
             print(f"DEBUG: {msg}")
+
+    def load_gitignore_patterns(self, root_path: Path) -> Optional[pathspec.PathSpec]:
+        """Load .gitignore patterns from the given directory"""
+        gitignore_path = root_path / ".gitignore"
+        if gitignore_path.exists():
+            try:
+                with open(gitignore_path, "r", encoding="utf-8") as f:
+                    spec = pathspec.PathSpec.from_lines("gitwildmatch", f)
+                    self.log_debug(f"Loaded .gitignore from {gitignore_path}")
+                    return spec
+            except Exception as e:
+                self.log_debug(f"Error loading .gitignore: {e}")
+        return None
 
     def is_binary(self, file_path: Union[str, Path]) -> bool:
         """Check if a file is binary"""
@@ -477,14 +491,54 @@ class Readium:
                 )
             path = base_path
 
+        # Load .gitignore patterns if enabled
+        gitignore_spec = None
+        if self.config.use_gitignore:
+            # We look for .gitignore in the original path (root of the repo/dir)
+            # If we are in a subdirectory (target_dir), we might want to look up?
+            # For now, let's look in the current path being processed.
+            # If target_dir is used, we might miss the root .gitignore.
+            # Let's try to find it in the original path passed to _process_directory
+            # or the current path if original is not set/same.
+            gitignore_spec = self.load_gitignore_patterns(path)
+
         for root, dirs, filenames in os.walk(path):
-            # Filter out excluded directories
-            dirs[:] = [d for d in dirs if d not in self.config.exclude_dirs]
+            # Calculate relative path from the root being processed
+            rel_root = Path(root).relative_to(path)
+
+            # Filter directories based on .gitignore and exclude_dirs
+            # We need to filter dirs in-place to prevent os.walk from traversing them
+            i = 0
+            while i < len(dirs):
+                d = dirs[i]
+                dir_rel_path = rel_root / d
+
+                # Check standard excludes
+                if d in self.config.exclude_dirs:
+                    del dirs[i]
+                    continue
+
+                # Check .gitignore
+                if gitignore_spec and gitignore_spec.match_file(
+                    str(dir_rel_path) + "/"
+                ):
+                    self.log_debug(f"Ignoring directory via .gitignore: {dir_rel_path}")
+                    del dirs[i]
+                    continue
+
+                i += 1
 
             for filename in filenames:
                 file_path = Path(root) / filename
+                relative_path = file_path.relative_to(path)
+
+                # Check .gitignore for files
+                if gitignore_spec and gitignore_spec.match_file(str(relative_path)):
+                    self.log_debug(f"Ignoring file via .gitignore: {relative_path}")
+                    continue
+
                 if self.should_process_file(file_path):
-                    relative_path = file_path.relative_to(path)
+                    # relative_path is already calculated above
                     result = self._process_file(file_path, relative_path)
                     if result:
                         files.append(result)

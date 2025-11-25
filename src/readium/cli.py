@@ -118,6 +118,12 @@ Note: Do not use empty values with -x/--exclude-dir. Each value must be a valid 
     default=False,
     help="Show a detailed token tree with file and directory token counts (tiktoken)",
 )
+@click.option(
+    "--no-gitignore",
+    is_flag=True,
+    default=False,
+    help="Do not respect .gitignore files (default: respect them)",
+)
 def main(
     args: Tuple[str, ...],
     target_dir: Optional[str] = None,
@@ -132,6 +138,7 @@ def main(
     debug: bool = False,
     use_markitdown: bool = False,
     tokens: bool = False,
+    no_gitignore: bool = False,
 ) -> None:
     """Read and analyze documentation from a directory, repository, or URL"""
     try:
@@ -187,6 +194,7 @@ def main(
             debug=debug,
             show_token_tree=tokens,
             token_calculation="tiktoken",
+            use_gitignore=not no_gitignore,
         )
 
         reader = Readium(config)

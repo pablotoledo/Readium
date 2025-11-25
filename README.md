@@ -12,6 +12,7 @@ A powerful Python tool for extracting, analyzing, and converting documentation f
   - Support for private repositories using tokens
   - Branch selection for Git repositories
   - Secure token handling and masking
+  - **Automatic .gitignore support** - respects .gitignore patterns by default
 - 🌐 **Process webpages and URLs** to convert directly to Markdown
   - Extract main content from documentation websites
   - Convert HTML to well-formatted Markdown
@@ -107,6 +108,9 @@ readium /path/to/directory --use-markitdown
 
 # Focus on specific subdirectory
 readium /path/to/directory --target-dir docs/
+
+# Disable .gitignore (process all files, including ignored ones)
+readium /path/to/directory --no-gitignore
 ```
 
 #### Advanced Options
@@ -142,6 +146,9 @@ readium https://example.com/docs --url-mode full
 
 # Process URL with main content extraction (default)
 readium https://example.com/docs --url-mode clean
+
+# Process directory and ignore .gitignore patterns
+readium /path/to/directory --no-gitignore
 ```
 
 #### Available Options
@@ -156,6 +163,7 @@ readium https://example.com/docs --url-mode clean
 - `--split-output <dir>`: Directory for split output files (each file gets its own UUID-named file)
 - `--url-mode <mode>`: URL processing mode: 'full' preserves all content, 'clean' extracts main content only (default: clean)
 - `--use-markitdown/--no-markitdown`: Enable/disable MarkItDown for Markdown conversion of PDF, DOCX, etc.
+- `--no-gitignore`: Disable .gitignore support (process all files, even those in .gitignore)
 - `--debug/-d, --no-debug/-D`: Enable/disable debug mode
 - `--tokens/--no-tokens`: Show/hide detailed token tree with file and directory token counts
 
@@ -168,6 +176,7 @@ readium https://example.com/docs --url-mode clean
 - Default excluded directories include: `.git`, `node_modules`, `__pycache__`, etc.
 - Default included file extensions cover most text and code files (`.md`, `.py`, `.js`, etc.).
 - With MarkItDown integration, additional file types can be processed (`.pdf`, `.docx`, etc.).
+- **By default, Readium respects `.gitignore` files** - use `--no-gitignore` to process all files.
 
 ### Python API
 
@@ -306,6 +315,9 @@ config = ReadConfig(
 
     # Mostrar tabla de tokens por archivo/directorio
     show_token_tree=False,  # True para activar el token tree
+
+    # Respect .gitignore patterns (default: True)
+    use_gitignore=True,  # Set to False to process all files
 )
 ```
 

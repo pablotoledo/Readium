@@ -32,6 +32,7 @@ pypdf = ">=4.3.1,<5.0.0"
 trafilatura = ">=1.6.0,<2.0.0"
 lxml = {extras = ["html-clean"], version = "^5.3.1"}
 tiktoken = ">=0.3.1"  # Ahora es dependencia base
+pathspec = "^0.12.1"
 
 [tool.poetry.extras]
 tokenizers = []  # Ya no es necesario, tiktoken es base
