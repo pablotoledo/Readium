@@ -199,6 +199,7 @@ class ReadConfig:
     token_calculation: Literal[
         "tiktoken"
     ] = "tiktoken"  # Token calculation mode (only tiktoken)
+    use_gitignore: bool = True  # Respect .gitignore files (new)
 
 
 def convert_url_to_markdown(url: str, config: ReadConfig) -> Tuple[str, str]:
